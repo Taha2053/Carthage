@@ -7,14 +7,9 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from supabase._async.client import AsyncClient
 
 from core.database import get_db
-from models.institution import Institution
-from models.department import Department
-from models.alert import Alert
-from models.fact_kpi import FactKPI
 from schemas.institution import (
     InstitutionCreate,
     InstitutionResponse,
@@ -28,113 +23,87 @@ router = APIRouter(prefix="/institutions", tags=["Institutions"])
 @router.get("", response_model=list[InstitutionResponse])
 async def list_institutions(
     is_active: Optional[bool] = Query(None),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     """List all institutions."""
-    query = select(Institution)
+    query = db.table("dim_institution").select("*")
     if is_active is not None:
-        query = query.where(Institution.is_active == is_active)
-    query = query.order_by(Institution.name)
-    result = await db.execute(query)
-    return result.scalars().all()
+        query = query.eq("is_active", is_active)
+    query = query.order("name")
+    
+    response = await query.execute()
+    return response.data
 
 
 @router.get("/{institution_id}", response_model=InstitutionResponse)
-async def get_institution(institution_id: int, db: AsyncSession = Depends(get_db)):
+async def get_institution(institution_id: int, db: AsyncClient = Depends(get_db)):
     """Get a single institution by ID."""
-    result = await db.execute(
-        select(Institution).where(Institution.id == institution_id)
-    )
-    inst = result.scalar_one_or_none()
-    if not inst:
+    response = await db.table("dim_institution").select("*").eq("id", institution_id).execute()
+    if not response.data:
         raise HTTPException(status_code=404, detail="Institution not found")
-    return inst
+    return response.data[0]
 
 
 @router.get("/{institution_id}/summary", response_model=InstitutionSummary)
 async def get_institution_summary(
-    institution_id: int, db: AsyncSession = Depends(get_db)
+    institution_id: int, db: AsyncClient = Depends(get_db)
 ):
     """Get institution with aggregated KPI + alert counts."""
-    result = await db.execute(
-        select(Institution).where(Institution.id == institution_id)
-    )
-    inst = result.scalar_one_or_none()
-    if not inst:
+    # 1. Get institution
+    inst_resp = await db.table("dim_institution").select("*").eq("id", institution_id).execute()
+    if not inst_resp.data:
         raise HTTPException(status_code=404, detail="Institution not found")
+    inst = inst_resp.data[0]
 
-    # Count KPIs
-    kpi_count = await db.execute(
-        select(func.count(FactKPI.id)).where(FactKPI.institution_id == institution_id)
-    )
-    # Count alerts
-    alert_count = await db.execute(
-        select(func.count(Alert.id)).where(
-            Alert.institution_id == institution_id, Alert.is_resolved == False
-        )
-    )
-    critical_count = await db.execute(
-        select(func.count(Alert.id)).where(
-            Alert.institution_id == institution_id,
-            Alert.severity == "critical",
-            Alert.is_resolved == False,
-        )
-    )
-    dept_count = await db.execute(
-        select(func.count(Department.id)).where(
-            Department.institution_id == institution_id
-        )
-    )
+    # 2. Count KPIs (exact count using count='exact')
+    kpi_resp = await db.table("fact_kpis").select("id", count="exact").eq("institution_id", institution_id).execute()
+    kpi_count = kpi_resp.count if kpi_resp.count is not None else 0
 
-    return InstitutionSummary(
-        id=inst.id,
-        uuid=inst.uuid,
-        code=inst.code,
-        name=inst.name,
-        short_name=inst.short_name,
-        city=inst.city,
-        region=inst.region,
-        institution_type=inst.institution_type,
-        founding_year=inst.founding_year,
-        student_capacity=inst.student_capacity,
-        is_active=inst.is_active,
-        created_at=inst.created_at,
-        kpi_count=kpi_count.scalar() or 0,
-        alert_count=alert_count.scalar() or 0,
-        critical_alerts=critical_count.scalar() or 0,
-        department_count=dept_count.scalar() or 0,
-    )
+    # 3. Count total unresolved alerts
+    alert_resp = await db.table("alerts").select("id", count="exact").eq("institution_id", institution_id).eq("is_resolved", False).execute()
+    alert_count = alert_resp.count if alert_resp.count is not None else 0
+
+    # 4. Count critical unresolved alerts
+    crit_resp = await db.table("alerts").select("id", count="exact").eq("institution_id", institution_id).eq("is_resolved", False).eq("severity", "critical").execute()
+    critical_count = crit_resp.count if crit_resp.count is not None else 0
+
+    # 5. Count departments
+    dept_resp = await db.table("dim_department").select("id", count="exact").eq("institution_id", institution_id).execute()
+    dept_count = dept_resp.count if dept_resp.count is not None else 0
+
+    # Add counts to inst dict
+    inst["kpi_count"] = kpi_count
+    inst["alert_count"] = alert_count
+    inst["critical_alerts"] = critical_count
+    inst["department_count"] = dept_count
+
+    return inst
 
 
 @router.post("", response_model=InstitutionResponse, status_code=201)
 async def create_institution(
-    data: InstitutionCreate, db: AsyncSession = Depends(get_db)
+    data: InstitutionCreate, db: AsyncClient = Depends(get_db)
 ):
     """Create a new institution."""
-    inst = Institution(**data.model_dump())
-    db.add(inst)
-    await db.flush()
-    await db.refresh(inst)
-    return inst
+    response = await db.table("dim_institution").insert(data.model_dump(exclude_unset=True)).execute()
+    if not response.data:
+        raise HTTPException(status_code=400, detail="Could not create institution")
+    return response.data[0]
 
 
 @router.patch("/{institution_id}", response_model=InstitutionResponse)
 async def update_institution(
     institution_id: int,
     data: InstitutionUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     """Update an institution."""
-    result = await db.execute(
-        select(Institution).where(Institution.id == institution_id)
-    )
-    inst = result.scalar_one_or_none()
-    if not inst:
-        raise HTTPException(status_code=404, detail="Institution not found")
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        # Nothing to update
+        return await get_institution(institution_id, db)
 
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(inst, field, value)
-
-    await db.flush()
-    await db.refresh(inst)
-    return inst
+    response = await db.table("dim_institution").update(update_data).eq("id", institution_id).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Institution not found or update failed")
+    return response.data[0]

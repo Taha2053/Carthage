@@ -1,21 +1,20 @@
 """
 API v1 — NL Query (AI Assistant)
 Calls teammate's agents for natural language queries.
+Refactored to use Supabase SDK instead of SQLAlchemy.
 """
 from __future__ import annotations
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from supabase._async.client import AsyncClient
 from core.database import get_db
-from models.nl_query_log import NLQueryLog
 from schemas.query import NLQueryRequest, NLQueryResponse
 
 router = APIRouter(prefix="/query", tags=["AI Query"])
 
 
 @router.post("", response_model=NLQueryResponse)
-async def nl_query(body: NLQueryRequest, db: AsyncSession = Depends(get_db)):
+async def nl_query(body: NLQueryRequest, db: AsyncClient = Depends(get_db)):
     """Natural language query — powered by AI agent (teammate implements)."""
     import time
     start = time.time()
@@ -38,16 +37,16 @@ async def nl_query(body: NLQueryRequest, db: AsyncSession = Depends(get_db)):
     elapsed = int((time.time() - start) * 1000)
 
     # Log the query
-    log = NLQueryLog(
-        raw_query=body.query,
-        institution_id=body.institution_id,
-        generated_sql=generated_sql,
-        result_summary=answer,
-        execution_ms=elapsed,
-        was_successful=success,
-    )
-    db.add(log)
-    await db.flush()
+    insert_data = {
+        "raw_query": body.query,
+        "institution_id": body.institution_id,
+        "generated_sql": generated_sql,
+        "result_summary": answer,
+        "execution_ms": elapsed,
+        "was_successful": success,
+    }
+    
+    await db.table("nl_query_log").insert(insert_data).execute()
 
     return NLQueryResponse(
         query=body.query,
@@ -62,21 +61,19 @@ async def nl_query(body: NLQueryRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/history")
 async def query_history(
     limit: int = Query(20, le=100),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     """Past NL queries."""
-    result = await db.execute(
-        select(NLQueryLog).order_by(NLQueryLog.created_at.desc()).limit(limit)
-    )
-    logs = result.scalars().all()
+    resp = await db.table("nl_query_log").select("*").order("created_at", desc=True).limit(limit).execute()
+    logs = resp.data
     return [
         {
-            "id": l.id,
-            "query": l.raw_query,
-            "answer": l.result_summary,
-            "execution_ms": l.execution_ms,
-            "was_successful": l.was_successful,
-            "created_at": l.created_at.isoformat() if l.created_at else None,
+            "id": l.get("id"),
+            "query": l.get("raw_query"),
+            "answer": l.get("result_summary"),
+            "execution_ms": l.get("execution_ms"),
+            "was_successful": l.get("was_successful"),
+            "created_at": l.get("created_at"),
         }
         for l in logs
     ]

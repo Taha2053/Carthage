@@ -17,6 +17,15 @@ from api.v1.data_catalog import router as data_catalog_router
 from api.v1.users import router as users_router
 from api.v1.query import router as query_router
 from api.v1.websocket import router as ws_router
+# New domain endpoints
+from api.v1.students import router as students_router
+from api.v1.programs import router as programs_router
+from api.v1.staff import router as staff_router
+from api.v1.partnerships import router as partnerships_router
+from api.v1.research import router as research_router
+from api.v1.spaces import router as spaces_router
+from api.v1.equipment import router as equipment_router
+from api.v1.forecasts import router as forecasts_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -33,3 +42,12 @@ api_router.include_router(data_catalog_router)
 api_router.include_router(users_router)
 api_router.include_router(query_router)
 api_router.include_router(ws_router)
+# New domain routers
+api_router.include_router(students_router)
+api_router.include_router(programs_router)
+api_router.include_router(staff_router)
+api_router.include_router(partnerships_router)
+api_router.include_router(research_router)
+api_router.include_router(spaces_router)
+api_router.include_router(equipment_router)
+api_router.include_router(forecasts_router)

@@ -20,26 +20,42 @@ class Report(Base):
     uuid: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True), default=uuid.uuid4, unique=True
     )
+    template_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("report_templates.id")
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     report_type: Mapped[str | None] = mapped_column(String(30))
     scope: Mapped[str | None] = mapped_column(String(20))
     institution_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("dim_institution.id")
     )
+    department_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("dim_department.id")
+    )
     domain_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("dim_domain.id")
     )
     period_start: Mapped[str | None] = mapped_column(Date)
     period_end: Mapped[str | None] = mapped_column(Date)
-    generated_by: Mapped[str | None] = mapped_column(String(100))
+    academic_year: Mapped[str | None] = mapped_column(String(10))
+    generated_by: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id")
+    )
+    generation_type: Mapped[str] = mapped_column(String(20), default="on_demand")
     file_path: Mapped[str | None] = mapped_column(Text)
     format: Mapped[str | None] = mapped_column(String(10))
+    file_size_bytes: Mapped[int | None] = mapped_column(BigInteger)
     ai_summary: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="generating")
+    download_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     institution = relationship("Institution", lazy="selectin")
+    department = relationship("Department", lazy="selectin")
     domain = relationship("Domain", lazy="selectin")
+    template = relationship("ReportTemplate", lazy="selectin")
+    generator = relationship("User", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<Report {self.title}>"
