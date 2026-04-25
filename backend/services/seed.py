@@ -1,18 +1,27 @@
 """
-Seed script for CARTHAGE.
-Inserts institutions and KPI data aligned with the DB schema.
+Seed script for CARTHAGE using Supabase Python SDK.
 Run with: cd backend && uv run python services/seed.py
 """
 
-import asyncio
 import os
 from datetime import datetime, timedelta
 from math import copysign
 
-import asyncpg
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
 load_dotenv()
+
+
+def get_supabase_client() -> Client:
+    """Create Supabase client from environment."""
+    supabase_url = os.getenv("SUPABASE_URL", "")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "") or os.getenv("SUPABASE_KEY", "")
+    
+    if not supabase_url or not supabase_key:
+        raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in .env")
+    
+    return create_client(supabase_url, supabase_key)
 
 
 # Institution definitions - aligned with dim_institution table
@@ -69,17 +78,6 @@ DOMAIN_IDS = {
 }
 
 
-# Metric definitions - aligned with dim_metric table
-# Using exact codes from migration 000b_seed_data.sql
-METRICS = [
-    {"code": "ACAD_SUCCESS_RATE", "domain": "ACADEMIC"},
-    {"code": "ACAD_DROPOUT_RATE", "domain": "ACADEMIC"},
-    {"code": "FIN_BUDGET_EXEC_RATE", "domain": "FINANCE"},
-    {"code": "HR_ABSENTEEISM_RATE", "domain": "HR"},
-    {"code": "ENR_FILL_RATE", "domain": "ENROLLMENT"},
-]
-
-
 # Base KPI values per institution (first semester)
 BASE_KPIS = {
     "supcom": {"ACAD_SUCCESS_RATE": 81.2, "ACAD_DROPOUT_RATE": 6.3, "FIN_BUDGET_EXEC_RATE": 88.9, "HR_ABSENTEEISM_RATE": 5.8, "ENR_FILL_RATE": 92.0},
@@ -104,32 +102,25 @@ def _round_2(value: float) -> float:
     return round(value, 2)
 
 
-async def seed_institutions(conn):
+def seed_institutions(supabase: Client):
     """Insert or update institution records into dim_institution."""
     print("\nSeeding institutions...")
     for inst in INSTITUTIONS:
         try:
-            await conn.execute("""
-                INSERT INTO dim_institution (code, name, short_name, city, region, institution_type)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (code) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    short_name = EXCLUDED.short_name,
-                    city = EXCLUDED.city,
-                    region = EXCLUDED.region,
-                    institution_type = EXCLUDED.institution_type
-            """, inst["code"], inst["name"], inst["short_name"], inst["city"], inst["region"], inst["institution_type"])
-            print(f"  ✓ {inst['name']}")
+            response = supabase.table("dim_institution").upsert(inst, on_conflict="code").execute()
+            if response.data:
+                print(f"  ✓ {inst['name']}")
+            else:
+                print(f"  ✗ {inst['name']}: {response}")
         except Exception as e:
             print(f"  ✗ {inst['name']}: {e}")
     print("Done seeding institutions.")
 
 
-async def seed_time_dim(conn):
+def seed_time_dim(supabase: Client):
     """Ensure time dimensions exist for last 3 semesters."""
     print("\nSeeding time dimensions...")
     
-    # Generate last 3 semesters
     now = datetime.utcnow()
     semesters = [
         {"year": 2025, "semester": 1, "month": 9, "label": "S1 2024-2025"},
@@ -139,19 +130,24 @@ async def seed_time_dim(conn):
     
     for sem in semesters:
         full_date = datetime(sem["year"], sem["month"], 1)
+        record = {
+            "full_date": full_date.strftime("%Y-%m-%d"),
+            "day": 1,
+            "month": sem["month"],
+            "month_name": full_date.strftime("%B"),
+            "semester": sem["semester"],
+            "academic_year": f"{sem['year']-1}-{sem['year']}",
+            "year": sem["year"],
+        }
         try:
-            await conn.execute("""
-                INSERT INTO dim_time (full_date, day, month, month_name, semester, academic_year, year)
-                VALUES ($1, 1, $2, $3, $4, $5, $6)
-                ON CONFLICT (full_date) DO NOTHING
-            """, full_date, sem["month"], full_date.strftime("%B"), sem["semester"], f"{sem['year']-1}-{sem['year']}", sem["year"])
+            response = supabase.table("dim_time").upsert(record, on_conflict="full_date").execute()
         except Exception as e:
             print(f"  Time insert error: {e}")
     
     print("Done seeding time dimensions.")
 
 
-async def seed_metric_dim(conn):
+def seed_metric_dim(supabase: Client):
     """Ensure metrics exist in dim_metric."""
     print("\nSeeding metrics...")
     
@@ -164,36 +160,43 @@ async def seed_metric_dim(conn):
     ]
     
     for code, name, name_fr, domain, unit in metrics_def:
+        domain_id = DOMAIN_IDS.get(domain, 1)
+        record = {
+            "code": code,
+            "name": name,
+            "name_fr": name_fr,
+            "domain_id": domain_id,
+            "unit": unit,
+            "aggregation": "AVG",
+            "higher_is_better": True,
+            "warning_threshold": 70,
+            "critical_threshold": 50,
+        }
         try:
-            domain_id = DOMAIN_IDS.get(domain, 1)
-            await conn.execute("""
-                INSERT INTO dim_metric (code, name, name_fr, domain_id, unit, aggregation, higher_is_better, warning_threshold, critical_threshold)
-                VALUES ($1, $2, $3, $4, $5, 'AVG', TRUE, 70, 50)
-                ON CONFLICT (code) DO NOTHING
-            """, code, name, name_fr, domain_id, unit)
+            response = supabase.table("dim_metric").upsert(record, on_conflict="code").execute()
         except Exception as e:
             print(f"  Metric insert error: {e}")
     
     print("Done seeding metrics.")
 
 
-async def seed_fact_kpis(conn):
+def seed_fact_kpis(supabase: Client):
     """Insert KPI data into fact_kpis table."""
     print("\nSeeding fact_kpis...")
     
     # Get institution IDs
-    inst_rows = await conn.fetch("SELECT id, code FROM dim_institution")
-    inst_map = {row["code"]: row["id"] for row in inst_rows}
+    inst_response = supabase.table("dim_institution").select("id, code").execute()
+    inst_map = {row["code"]: row["id"] for row in inst_response.data}
     
     # Get time IDs
-    time_rows = await conn.fetch("SELECT id, semester, academic_year FROM dim_time ORDER BY academic_year, semester")
-    time_map = [(row["id"], row["semester"], row["academic_year"]) for row in time_rows]
+    time_response = supabase.table("dim_time").select("id, semester, academic_year").order("academic_year, semester").execute()
+    time_data = [(row["id"], row["semester"], row["academic_year"]) for row in time_response.data]
     
     # Get metric IDs
-    metric_rows = await conn.fetch("SELECT id, code FROM dim_metric")
-    metric_map = {row["code"]: row["id"] for row in metric_rows}
+    metric_response = supabase.table("dim_metric").select("id, code").execute()
+    metric_map = {row["code"]: row["id"] for row in metric_response.data}
     
-    if not inst_map or not time_map or not metric_map:
+    if not inst_map or not time_data or not metric_map:
         print("  ERROR: Need institutions, time, and metrics first")
         return
     
@@ -204,8 +207,7 @@ async def seed_fact_kpis(conn):
         base = BASE_KPIS.get(inst_code, {})
         inst_trends = TRENDS.get(inst_code, {})
         
-        # Calculate value_previous from trends
-        for time_idx, (time_id, semester, acad_year) in enumerate(time_map):
+        for time_idx, (time_id, semester, acad_year) in enumerate(time_data):
             for metric_code, base_value in base.items():
                 metric_id = metric_map.get(metric_code)
                 if not metric_id:
@@ -214,58 +216,67 @@ async def seed_fact_kpis(conn):
                 # Calculate value with trend
                 trend = inst_trends.get(metric_code, 0.0)
                 if time_idx == 0:
-                    # First semester - base value
                     value = _round_2(base_value)
                     value_previous = None
                 else:
-                    # Subsequent semesters - apply trend
                     trend_change = trend * time_idx
                     noise = ((time_idx * 7) % 5 - 2) * 0.2
                     value = _round_2(base_value + trend_change + noise)
                     value_previous = _round_2(base_value + trend_change if trend != 0 else base_value)
                 
+                record = {
+                    "institution_id": inst_id,
+                    "time_id": time_id,
+                    "metric_id": metric_id,
+                    "value": value,
+                    "value_previous": value_previous,
+                    "source": "seed",
+                }
+                
                 try:
-                    await conn.execute("""
-                        INSERT INTO fact_kpis (institution_id, time_id, metric_id, value, value_previous, source)
-                        VALUES ($1, $2, $3, $4, $5, 'seed')
-                        ON CONFLICT (institution_id, time_id, metric_id) DO UPDATE SET
-                            value = EXCLUDED.value,
-                            value_previous = EXCLUDED.value_previous
-                    """, inst_id, time_id, metric_id, value, value_previous)
+                    # Try upsert first - if fails, just insert
+                    response = supabase.table("fact_kpis").upsert(record, on_conflict="institution_id,time_id,metric_id").execute()
+                    if not response.data:
+                        raise Exception("No data")
                     total_inserted += 1
-                except Exception as e:
-                    print(f"  Error: {e}")
+                except:
+                    # If upsert fails, delete existing and re-insert
+                    try:
+                        supabase.table("fact_kpis").delete().match({
+                            "institution_id": inst_id, 
+                            "time_id": time_id, 
+                            "metric_id": metric_id
+                        }).execute()
+                    except:
+                        pass
+                    try:
+                        response = supabase.table("fact_kpis").insert(record).execute()
+                        if response.data:
+                            total_inserted += 1
+                    except Exception as e:
+                        print(f"  Error: {e}")
     
     print(f"  Inserted {total_inserted} KPI records")
     print("Done seeding fact_kpis.")
 
 
-async def main():
+def main():
     print("=" * 50)
-    print("CARTHAGE Seed Script (Aligned)")
+    print("CARTHAGE Seed Script (Supabase SDK)")
     print("=" * 50)
-    
-    db_url = os.getenv("DATABASE_URL", "")
-    if not db_url:
-        print("ERROR: DATABASE_URL not set in .env")
-        return
-    
-    raw_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
     
     try:
-        conn = await asyncpg.connect(raw_url)
-        print(f"Connected to: {raw_url[:40]}...")
+        supabase = get_supabase_client()
+        print("Connected to Supabase!")
     except Exception as e:
-        print(f"ERROR: Could not connect: {e}")
+        print(f"ERROR: Could not connect to Supabase: {e}")
         return
     
     # Seed in order
-    await seed_institutions(conn)
-    await seed_time_dim(conn)
-    await seed_metric_dim(conn)
-    await seed_fact_kpis(conn)
-    
-    await conn.close()
+    seed_institutions(supabase)
+    seed_time_dim(supabase)
+    seed_metric_dim(supabase)
+    seed_fact_kpis(supabase)
     
     print("\n" + "=" * 50)
     print("Seed complete!")
@@ -273,4 +284,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
