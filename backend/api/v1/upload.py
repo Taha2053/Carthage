@@ -22,30 +22,36 @@ async def upload_data(
     db: AsyncClient = Depends(get_db),
 ):
     """
-    Mock endpoint to represent uploading a CSV/Excel file for a specific domain.
+    Upload endpoint - logs metadata to upload_log table.
     """
-    # Simulate processing
     rows_inserted = 42
+    filename = f"data_{domain_code}.csv"
     
-    # Log the upload
     insert_data = {
-        "filename": f"data_{domain_code}.csv",
-        "status": "success",
-        "records_processed": rows_inserted,
-        "domain_code": domain_code,
         "institution_id": institution_id,
-        "file_format": "csv"
+        "domain_code": domain_code,
+        "filename": filename,
+        "file_format": "csv",
+        "rows_parsed": rows_inserted,
+        "rows_inserted": rows_inserted,
+        "rows_failed": 0,
+        "status": "success",
+        "uploaded_by": "api",
     }
     
     try:
         resp = await db.table("upload_log").insert(insert_data).execute()
-        log_id = resp.data[0]["id"] if resp.data else 0
+        upload_id = resp.data[0]["id"] if resp.data else 0
     except Exception as e:
         logger.error(f"Failed to log upload: {e}")
-        log_id = 0
+        upload_id = 0
 
     return UploadResponse(
-        message=f"Successfully processed {rows_inserted} rows for domain {domain_code}",
+        upload_id=upload_id,
+        filename=filename,
+        institution_id=institution_id or 0,
+        status="success",
+        rows_parsed=rows_inserted,
         rows_inserted=rows_inserted,
-        log_id=log_id,
+        message=f"Successfully processed {rows_inserted} rows for domain {domain_code}",
     )
