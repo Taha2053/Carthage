@@ -33,10 +33,10 @@ class Settings(BaseSettings):
     # ── Redis Cloud ──────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379"
 
-    # ── JWT Auth ─────────────────────────────────────────────
-    JWT_SECRET_KEY: str = "change-me"
-    JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
+    # ── Supabase Auth ────────────────────────────────────────
+    SUPABASE_URL: str = ""
+    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""
 
     # ── OpenAI (teammate's agents) ───────────────────────────
     OPENAI_API_KEY: str = ""
