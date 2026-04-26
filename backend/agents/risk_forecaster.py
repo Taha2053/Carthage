@@ -12,7 +12,7 @@ from typing import Dict, List
 logger = logging.getLogger(__name__)
 
 
-def forecast_risk(
+async def forecast_risk(
     institution: str,
     kpi_key: str,
     history: list[float],
@@ -31,26 +31,54 @@ def forecast_risk(
             "weeks_to_event": 6,
             "confidence": 0.75
         }
-
-    Implementation notes for teammate:
-        Prompt: given these N data points, what happens in 4-8 weeks?
-        Use OpenAI with structured output
     """
-    logger.info(f"[STUB] forecast_risk called: {institution}/{kpi_key}, {len(history)} points")
+    from core.llm import call_llm
+    import json
+    
+    logger.info(f"[RiskForecaster] Forecasting {kpi_key} for {institution} with {len(history)} points")
 
-    # Simple linear trend as placeholder
-    if len(history) >= 2:
-        trend = history[-1] - history[-2]
-        direction = "hausse" if trend > 0 else "baisse"
-    else:
-        trend = 0
-        direction = "stable"
+    prompt = f"""
+    Tu es un analyste de donnǸes prǸdictif pour l'UniversitǸ de Carthage.
+    Analyse les donnǸes historiques suivantes pour l'indicateur '{kpi_key}'   l'institution '{institution}'.
+    Valeurs historiques (de la plus ancienne   la plus rǸcente): {history}
+    
+    Projette ce qui se passera dans l'annǸe   venir si cette tendance se maintient.
+    
+    Tu DOIS retourner UNIQUEMENT un objet JSON valide, sans aucun texte ou formatage Markdown autour, avec ce format exact :
+    {{
+        "prediction_text": "Une prǸdiction claire et professionnelle en franais sur ce qui se passera si la tendance continue. Recommande une action.",
+        "weeks_to_event": 6,
+        "confidence": 0.85
+    }}
+    """
+    
+    try:
+        response = await call_llm(prompt, temperature=0.1)
+        
+        # Clean markdown if present
+        cleaned = response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:-3].strip()
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:-3].strip()
+            
+        decision = json.loads(cleaned)
+        return decision
+    except Exception as e:
+        logger.error(f"[RiskForecaster] Failed to forecast risk: {e}")
+        
+        # Fallback logic
+        if len(history) >= 2:
+            trend = history[-1] - history[-2]
+            direction = "hausse" if trend > 0 else "baisse"
+        else:
+            trend = 0
+            direction = "stable"
 
-    return {
-        "prediction_text": (
-            f"[Stub] {kpi_key} à {institution} montre une tendance en {direction}. "
-            f"Agent AI non configuré."
-        ),
-        "weeks_to_event": 8,
-        "confidence": 0.5,
-    }
+        return {
+            "prediction_text": (
+                f"{kpi_key} à {institution} montre une tendance en {direction}."
+            ),
+            "weeks_to_event": 8,
+            "confidence": 0.5,
+        }

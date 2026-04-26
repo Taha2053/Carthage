@@ -12,12 +12,33 @@ logger = logging.getLogger(__name__)
 
 
 async def on_data_uploaded(event: Dict) -> None:
-    """Handle data_uploaded event → push to WebSocket clients."""
-    logger.info(f"📥 Worker: data_uploaded event received")
-    await manager.broadcast("kpis", {
-        "type": "data_uploaded",
-        "data": event.get("data", {}),
-    })
+    """Handle data_uploaded event → run Orchestrator post-upload pipeline → broadcast results."""
+    logger.info("📥 Worker: data_uploaded event received — routing to Orchestrator")
+
+    event_data = event.get("data", {})
+    institution_id = event_data.get("institution_id")
+
+    if institution_id:
+        try:
+            from core.database import get_supabase
+            from agents.orchestrator import orchestrator
+
+            db = await get_supabase()
+            pipeline_result = await orchestrator.run_post_upload_pipeline(
+                institution_id=institution_id,
+                uploaded_data=event_data,
+                db=db,
+            )
+            await manager.broadcast("kpis", {
+                "type": "data_uploaded",
+                "data": pipeline_result,
+            })
+            logger.info(f"✅ Worker: Orchestrator pipeline complete for institution {institution_id}")
+        except Exception as e:
+            logger.error(f"⚠️ Worker: Orchestrator pipeline failed: {e}")
+            await manager.broadcast("kpis", {"type": "data_uploaded", "data": event_data})
+    else:
+        await manager.broadcast("kpis", {"type": "data_uploaded", "data": event_data})
 
 
 async def on_kpi_updated(event: Dict) -> None:
@@ -30,8 +51,56 @@ async def on_kpi_updated(event: Dict) -> None:
 
 
 async def on_alert_triggered(event: Dict) -> None:
-    """Handle alert_triggered event → push to WebSocket clients."""
+    """Handle alert_triggered event → auto-explain with AI → push to WebSocket clients."""
+    from agents.anomaly_reasoner import reason_anomaly
+    from core.database import get_supabase
+    
     logger.info(f"🚨 Worker: alert_triggered event received")
+    
+    # Extract alert ID from the event data if available
+    alert_id = event.get("data", {}).get("alert_id")
+    
+    if alert_id:
+        try:
+            db = await get_supabase()
+            
+            # Fetch the alert details
+            alert_resp = await db.table("alerts").select("*, dim_institution(code), dim_metric(code)").eq("id", alert_id).execute()
+            
+            if alert_resp.data:
+                alert = alert_resp.data[0]
+                
+                # Only explain if it hasn't been explained yet
+                if not alert.get("explanation"):
+                    institution_code = alert.get("dim_institution", {}).get("code", "Unknown")
+                    metric_code = alert.get("dim_metric", {}).get("code", "Unknown")
+                    value = float(alert.get("value") or 0)
+                    threshold = float(alert.get("threshold") or 0)
+                    
+                    logger.info(f"🧠 Worker: Auto-triggering AI Anomaly Reasoner for Alert {alert_id}")
+                    ai_explanation = await reason_anomaly(
+                        institution=institution_code,
+                        kpi_key=metric_code,
+                        value=value,
+                        threshold=threshold,
+                        peer_avg=threshold * 0.9
+                    )
+                    
+                    update_data = {
+                        "explanation": ai_explanation.get("explanation", ""),
+                        "recommended_action": ai_explanation.get("suggestion", ""),
+                    }
+                    
+                    await db.table("alerts").update(update_data).eq("id", alert_id).execute()
+                    
+                    # Update the event data to broadcast the new explanation
+                    event["data"]["explanation"] = update_data["explanation"]
+                    event["data"]["recommended_action"] = update_data["recommended_action"]
+                    
+        except Exception as e:
+            logger.error(f"❌ Worker: Failed to run auto-explainer: {e}")
+
+    # Broadcast to frontend
     await manager.broadcast("alerts", {
         "type": "alert",
         "data": event.get("data", {}),

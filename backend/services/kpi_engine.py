@@ -245,7 +245,13 @@ class KPIEngine:
     async def get_dept_rankings(
         self, db: AsyncClient, institution_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
-        return await self.get_network_comparison(db)
+        """Return network rankings, optionally filtered to one institution's metrics."""
+        query = db.table("mv_network_comparison").select("*")
+        if institution_id:
+            query = query.eq("institution_id", institution_id)
+        query = query.order("metric_code").order("network_rank")
+        response = await query.execute()
+        return response.data
 
     async def get_trends(
         self, db: AsyncClient,

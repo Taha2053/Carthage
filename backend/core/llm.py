@@ -74,7 +74,7 @@ async def get_embedding(text: str, model: str = "mistral-embed") -> List[float]:
                 None,
                 lambda: client.embeddings.create(
                     model=model,
-                    inputs=[text[:8000]],
+                    inputs=[text[:8000]],  # mistralai v2 uses 'inputs'
                 )
             ),
             timeout=25.0,

@@ -13,7 +13,7 @@ from typing import Dict
 logger = logging.getLogger(__name__)
 
 
-def generate_pulse(institution_name: str, kpis: dict) -> str:
+async def generate_pulse(institution_name: str, kpis: dict) -> str:
     """
     Generate a concise briefing for an institution president.
 
@@ -23,26 +23,24 @@ def generate_pulse(institution_name: str, kpis: dict) -> str:
 
     Returns:
         A 3-sentence French briefing. Factual, direct, actionable.
-
-    Example output:
-        "L'ENSTAB affiche un taux de réussite de 72.5%, en baisse de 3% par rapport
-         au semestre précédent. Le taux d'abandon atteint 18.3%, dépassant le seuil
-         critique de 15%. Action recommandée : renforcer l'accompagnement pédagogique
-         en S2."
-
-    Implementation notes for teammate:
-        system = "Tu es un analyste universitaire expert.
-                  Tu génères des briefings concis en français pour les directeurs
-                  d'établissements universitaires tunisiens.
-                  Format: 3 phrases maximum. Ton: factuel, direct, actionnable.
-                  Mentionne les chiffres précis. Signale ce qui est préoccupant."
-
-        user = f"Établissement: {institution_name}\\nKPIs: {json.dumps(kpis, ensure_ascii=False)}"
-        # → OpenAI call → return text
     """
-    # STUB: return placeholder until teammate implements
-    logger.info(f"[STUB] generate_pulse called for {institution_name}")
-    return (
-        f"[Agent non configuré] Briefing pour {institution_name}: "
-        f"{len(kpis)} KPIs reçus. Implémentation en attente."
+    from core.llm import call_llm
+
+    logger.info(f"[PulseWriter] Generating pulse for {institution_name}")
+
+    system_prompt = (
+        "Tu es un analyste universitaire expert. "
+        "Tu génères des briefings concis en français pour les directeurs "
+        "d'établissements universitaires tunisiens. "
+        "Format: 3 phrases maximum. Ton: factuel, direct, actionnable. "
+        "Mentionne les chiffres précis. Signale ce qui est préoccupant."
     )
+
+    user_prompt = f"Établissement: {institution_name}\nKPIs: {json.dumps(kpis, ensure_ascii=False)}"
+
+    try:
+        response = await call_llm(user_prompt, system=system_prompt, temperature=0.3)
+        return response.strip()
+    except Exception as e:
+        logger.error(f"[PulseWriter] Failed to generate pulse: {e}")
+        return f"Erreur lors de la génération du briefing pour {institution_name}."

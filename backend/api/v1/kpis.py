@@ -3,10 +3,12 @@ API v1 — KPIs (Dashboard Data)
 """
 from __future__ import annotations
 from typing import Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, Path
 from supabase._async.client import AsyncClient
 from core.database import get_db
+from core.events import event_bus
 from services.kpi_engine import kpi_engine
+from schemas.kpi import KPIOverrideRequest
 
 router = APIRouter(prefix="/kpis", tags=["KPIs"])
 
@@ -77,10 +79,21 @@ async def get_domain_averages(
 
 @router.get("/rankings")
 async def get_rankings(
-    institution_id: Optional[int] = Query(None),
+    institution_id: Optional[int] = Query(None, description="Filter rankings for a specific institution"),
+    metric_code: Optional[str] = Query(None, description="Filter rankings for a specific metric"),
+    academic_year: Optional[str] = Query(None, description="Filter rankings for a specific academic year"),
     db: AsyncClient = Depends(get_db),
 ):
-    """Network-wide rankings (from mv_network_comparison)."""
+    """
+    Network-wide leaderboard from mv_network_comparison.
+    - Without filters: full network ranking across all metrics and institutions.
+    - With institution_id: shows where that institution ranks for every metric.
+    - With metric_code: shows all institutions ranked on a single metric.
+    - Combine filters for granular slices.
+    """
+    if metric_code or academic_year:
+        # Use the dedicated comparison method for metric-level slices
+        return await kpi_engine.get_network_comparison(db, metric_code, academic_year)
     return await kpi_engine.get_dept_rankings(db, institution_id)
 
 
@@ -159,3 +172,52 @@ async def refresh_views(db: AsyncClient = Depends(get_db)):
     """Manually refresh all 8 materialized views."""
     await kpi_engine.refresh_materialized_views(db)
     return {"status": "refreshed", "views": 8}
+
+
+@router.put("/{fact_id}/override")
+async def override_kpi(
+    fact_id: int = Path(..., description="ID of the fact_kpis record to override"),
+    payload: KPIOverrideRequest = None,
+    db: AsyncClient = Depends(get_db),
+):
+    """Manually override a KPI value and log it to the audit trail."""
+    
+    # 1. Check if the KPI exists
+    existing = await db.table("fact_kpis").select("*").eq("id", fact_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="KPI record not found")
+        
+    old_data = existing.data[0]
+    
+    # 2. Update the KPI
+    update_data = {
+        "value": payload.new_value,
+        "source": "manual"
+    }
+    await db.table("fact_kpis").update(update_data).eq("id", fact_id).execute()
+    
+    # 3. Write to Audit Log (Schema 6.3 in migrations)
+    audit_entry = {
+        "action": "UPDATE",
+        "entity_type": "fact_kpis",
+        "entity_id": str(fact_id),
+        "old_value": old_data,
+        "new_value": {**old_data, **update_data},
+        "performed_by": str(payload.user_id),
+        "description": f"Manual Override: {payload.reason}"
+    }
+    await db.table("audit_log").insert(audit_entry).execute()
+    
+    # 4. Trigger Redis Event so AI Agents/MVs know it changed
+    await event_bus.publish(
+        "kpi_updated",
+        {
+            "fact_id": fact_id,
+            "metric_id": old_data.get("metric_id"),
+            "institution_id": old_data.get("institution_id"),
+            "old_value": old_data.get("value"),
+            "new_value": payload.new_value
+        }
+    )
+    
+    return {"status": "success", "message": "KPI manually overridden and audited."}
