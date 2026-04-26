@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
+    MISTRAL_API_KEY: str = ""
     APP_NAME: str = "CARTHAGE"
     DEBUG: bool = False
 

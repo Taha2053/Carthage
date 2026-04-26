@@ -23,7 +23,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen carthage-bg flex items-center justify-center px-4">
+    <div className="min-h-screen bg-paper flex items-center justify-center px-4">
       {/* Atmospheric background arcs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full border border-gold/10" />
