@@ -3,7 +3,7 @@
  * Connected to real Supabase database via FastAPI backend
  */
 import api from './api'
-import type { Institution, Alert, Briefing, KpiSnapshot, Health } from '@/types'
+import type { Institution, Alert, Briefing, KpiSnapshot, Health, DashboardSummary } from '@/types'
 
 /* ────────────────────────────────────────────
  * Backend Types
@@ -181,6 +181,25 @@ export async function fetchInstitutionAlerts(institutionId: number): Promise<Bac
 /* ────────────────────────────────────────────
  * Dashboard APIs
  * ──────────────────────────────────────────── */
+
+export async function fetchDashboardSummary(): Promise<DashboardSummary> {
+  const [data, alertsSummary, briefing] = await Promise.all([
+    fetchDashboardInstitutions(),
+    fetchNetworkAlerts(),
+    fetchNetworkBriefing()
+  ]);
+  
+  const networkIndex = 85.4; // Mocked or calculated overall index
+
+  return {
+    networkIndex,
+    institutions: data.institutions,
+    alertsSummary,
+    briefing,
+    rankings: []
+  };
+}
+
 
 export async function fetchDashboardInstitutions(): Promise<{ institutions: Institution[]; placeholders: string[] }> {
   try {
