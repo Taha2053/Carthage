@@ -89,10 +89,10 @@
                 </div>
 
                 <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
-                    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+                    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.docx,.doc">
                     <div style="font-size: 48px; margin-bottom: 16px;">📁</div>
                     <p style="font-size: 18px; font-weight: 600; color: #475569;">Drop your file here or click to browse</p>
-                    <p style="color: #94a3b8; margin-top: 8px;">CSV, XLSX, XLS formats supported</p>
+                    <p style="color: #94a3b8; margin-top: 8px;">CSV, Excel, PDF, Images, DOC formats supported</p>
                 </div>
 
                 <button class="btn" id="uploadBtn" onclick="uploadFile()" disabled>Upload File</button>
@@ -117,8 +117,8 @@
         <div id="tab-validate" class="tab-content">
             <div class="card">
                 <h2>✅ Validate File (No Storage)</h2>
-                <div class="file-drop" onclick="document.getElementById('validateInput').click()">
-                    <input type="file" id="validateInput" accept=".csv,.xlsx,.xls">
+                <div class="file-drop" id="validateFileDrop" onclick="document.getElementById('validateInput').click()">
+                    <input type="file" id="validateInput" accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.docx,.doc">
                     <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
                     <p style="font-size: 18px; font-weight: 600; color: #475569;">Drop file to validate</p>
                 </div>
@@ -296,8 +296,7 @@
         }
 
         async function loadMetrics() {
-            const res = await fetch(`${API_BASE}/institutions`);
-            document.getElementById('metricsList').textContent = 'Test CSV format:\n\nmetric_code,value,institution_code,academic_year,semester\n\nAvailable metric_codes:\nenrolled_students\navg_grade\ngraduation_rate\nrepetition_rate\ndropout_rate\nattendance_rate\nsuccess_rate\nbudget_execution_rate\nabsenteeism_rate\nemployability_rate';
+            document.getElementById('metricsList').textContent = `Allowed MIME types:\nimage/*,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword`;
         }
 
         function generateCSV() {
