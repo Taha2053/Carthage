@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from '@/store/authStore'
 import Index from './pages/Index'
 import Login from './pages/Login'
 import CentralDashboard from './pages/CentralDashboard'
@@ -9,21 +11,23 @@ import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 
 export default function App() {
+  const initSession = useAuthStore((s) => s.initSession)
+
+  useEffect(() => {
+    initSession()
+  }, [initSession])
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Landing page */}
+        {/* Public — no auth required */}
         <Route path="/" element={<Index />} />
-
-        {/* Auth */}
         <Route path="/login" element={<Login />} />
 
         {/* Protected app routes */}
         <Route
           element={
-            <ProtectedRoute
-              allowedRoles={['ucar_central', 'institution_admin', 'enseignant', 'etudiant']}
-            />
+            <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin', 'enseignant', 'etudiant']} />
           }
         >
           <Route element={<AppLayout />}>
@@ -38,7 +42,7 @@ export default function App() {
             <Route
               path="/institution/:id"
               element={
-                <ProtectedRoute allowedRoles={['institution_admin']}>
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
                   <InstitutionPage />
                 </ProtectedRoute>
               }
@@ -46,7 +50,7 @@ export default function App() {
             <Route
               path="/teacher"
               element={
-                <ProtectedRoute allowedRoles={['enseignant']}>
+                <ProtectedRoute allowedRoles={['ucar_central', 'enseignant']}>
                   <TeacherPage />
                 </ProtectedRoute>
               }
@@ -54,7 +58,7 @@ export default function App() {
             <Route
               path="/student"
               element={
-                <ProtectedRoute allowedRoles={['etudiant']}>
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin', 'enseignant', 'etudiant']}>
                   <StudentPage />
                 </ProtectedRoute>
               }
