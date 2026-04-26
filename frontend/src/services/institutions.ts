@@ -1,4 +1,7 @@
 import api from './api'
+import type { Institution } from '@/types'
+export type { Institution }
+import { mockInstitutions } from '@/mock/data'
 import type { Institution, KpiSnapshot, Alert, Health } from '@/types'
 import { fetchInstitutionKPIs, fetchInstitutionAlerts } from './adapters'
 

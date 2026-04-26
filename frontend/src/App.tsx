@@ -13,6 +13,7 @@ import ForecastsPage from './pages/ForecastsPage'
 import RankingsPage from './pages/RankingsPage'
 import AlertsPage from './pages/AlertsPage'
 import OrchestratorPage from './pages/OrchestratorPage'
+import StrategicIntelligencePage from './pages/StrategicIntelligencePage'
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 
@@ -116,6 +117,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['ucar_central']}>
                   <OrchestratorPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/strategy"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central']}>
+                  <StrategicIntelligencePage />
                 </ProtectedRoute>
               }
             />

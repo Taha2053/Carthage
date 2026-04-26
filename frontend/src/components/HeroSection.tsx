@@ -80,11 +80,11 @@ export default function HeroSection() {
   const navigate = useNavigate()
 
   return (
-    <div className="bg-paper min-h-screen carthage-bg">
+    <div className="bg-paper min-h-screen">
       <Navbar />
 
       {/* ── Hero ── */}
-      <section className="relative">
+      <section className="relative carthage-bg on-dark">
         <div className="max-w-[1400px] mx-auto px-8 pt-14 pb-10">
 
           {/* meta line */}
@@ -192,7 +192,7 @@ export default function HeroSection() {
       </section>
 
       {/* ── Marquee ── */}
-      <section className="border-y border-rule overflow-hidden">
+      <section className="border-y border-rule overflow-hidden bg-paper">
         <div className="max-w-[1400px] mx-auto px-8 py-6 flex items-center gap-8">
           <span className="shrink-0 text-[11px] uppercase tracking-[0.18em] text-ink3">Reconnu à travers le réseau</span>
           <div className="overflow-hidden flex-1 no-scrollbar">
@@ -209,7 +209,7 @@ export default function HeroSection() {
       </section>
 
       {/* ── Three pillars ── */}
-      <section className="max-w-[1400px] mx-auto px-8 py-24">
+      <section className="max-w-[1400px] mx-auto px-8 py-24 bg-paper w-full">
         <div className="flex flex-col gap-3 mb-14">
           <Pill>Ce que fait CarthaVillage</Pill>
           <h2 className="font-display text-[42px] md:text-[56px] leading-[0.95] tracking-tighter2 text-ink">
@@ -263,7 +263,7 @@ export default function HeroSection() {
       </section>
 
       {/* ── Pull quote ── */}
-      <section className="border-t border-rule">
+      <section className="border-t border-rule bg-paper">
         <div className="max-w-[1100px] mx-auto px-8 py-24 text-center">
           <span className="pill">Lettre du recteur</span>
           <blockquote className="font-display text-[44px] md:text-[64px] leading-[1.02] tracking-tighter2 mt-8 text-ink">
@@ -283,7 +283,7 @@ export default function HeroSection() {
       </section>
 
       {/* ── Methodology ── */}
-      <section className="border-t border-rule bg-paper2/70">
+      <section className="border-t border-rule bg-paper2">
         <div className="max-w-[1400px] mx-auto px-8 py-20 grid grid-cols-12 gap-8">
           <div className="col-span-12 lg:col-span-5">
             <Pill>Méthodologie</Pill>
@@ -315,7 +315,7 @@ export default function HeroSection() {
       </section>
 
       {/* ── Big closer ── */}
-      <section className="border-t border-rule overflow-hidden">
+      <section className="border-t border-rule overflow-hidden bg-paper">
         <div className="max-w-[1400px] mx-auto px-8 pt-16 pb-10 grid grid-cols-12 gap-8 items-end">
           <div className="col-span-12 lg:col-span-7">
             <Pill>Commencer</Pill>
@@ -367,7 +367,7 @@ export default function HeroSection() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-rule mt-0">
+      <footer className="border-t border-rule mt-0 bg-paper">
         <div className="max-w-[1400px] mx-auto px-8 py-12 grid grid-cols-12 gap-8 text-[13px]">
           <div className="col-span-12 md:col-span-4">
             <div className="flex items-baseline gap-3">
