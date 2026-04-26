@@ -25,10 +25,12 @@ class Department(Base):
     field: Mapped[str | None] = mapped_column(String(100))
     specialty: Mapped[str | None] = mapped_column(String(100))
     head_name: Mapped[str | None] = mapped_column(String(255))
+    head_email: Mapped[str | None] = mapped_column(String(255))
     student_count: Mapped[int | None] = mapped_column(Integer)
     staff_count: Mapped[int | None] = mapped_column(Integer)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     institution = relationship("Institution", back_populates="departments")

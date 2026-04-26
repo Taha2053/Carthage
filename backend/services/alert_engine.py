@@ -1,6 +1,7 @@
 """
 UCAR Intelligence Hub — Alert Engine
 Generates alerts on threshold breaches + AI priority scoring.
+Refactored to use Supabase SDK instead of SQLAlchemy.
 """
 
 from __future__ import annotations
@@ -8,14 +9,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-
-from sqlalchemy import func, select, text, update
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from models.alert import Alert
-from models.fact_kpi import FactKPI
-from models.institution import Institution
-from models.metric import Metric
+from supabase._async.client import AsyncClient
 
 logger = logging.getLogger(__name__)
 
@@ -47,15 +41,14 @@ def priority_label(score: float) -> str:
 class AlertEngine:
     """Generates and manages alerts with AI prioritization."""
 
-    async def generate_alerts(self, db: AsyncSession) -> int:
+    async def generate_alerts(self, db: AsyncClient) -> int:
         """Run the DB generate_alerts() function and return count of new alerts."""
         try:
-            await db.execute(text("SELECT generate_alerts()"))
-            await db.commit()
-            result = await db.execute(
-                select(func.count(Alert.id)).where(Alert.is_resolved == False)
-            )
-            count = result.scalar() or 0
+            # Requires an RPC in Supabase
+            await db.rpc("generate_alerts").execute()
+            
+            resp = await db.table("alerts").select("id", count="exact").eq("is_resolved", False).execute()
+            count = resp.count if resp.count is not None else 0
             logger.info(f"🚨 Generated alerts. Total unresolved: {count}")
             return count
         except Exception as e:
@@ -64,115 +57,130 @@ class AlertEngine:
 
     async def get_alerts(
         self,
-        db: AsyncSession,
+        db: AsyncClient,
         institution_id: Optional[int] = None,
         severity: Optional[str] = None,
         resolved: Optional[bool] = False,
         limit: int = 100,
     ) -> List[Dict[str, Any]]:
         """Fetch alerts with priority scoring."""
-        query = (
-            select(
-                Alert,
-                Institution.name.label("institution_name"),
-                Institution.code.label("institution_code"),
-                Metric.code.label("metric_code"),
-                Metric.name.label("metric_name"),
-            )
-            .join(Institution, Alert.institution_id == Institution.id)
-            .join(Metric, Alert.metric_id == Metric.id)
+        query = db.table("alerts").select(
+            "*, dim_institution(name, code), dim_metric(code, name)"
         )
 
         if institution_id:
-            query = query.where(Alert.institution_id == institution_id)
+            query = query.eq("institution_id", institution_id)
         if severity:
-            query = query.where(Alert.severity == severity)
+            query = query.eq("severity", severity)
         if resolved is not None:
-            query = query.where(Alert.is_resolved == resolved)
+            query = query.eq("is_resolved", resolved)
 
-        query = query.order_by(Alert.created_at.desc()).limit(limit)
-        result = await db.execute(query)
-        rows = result.all()
+        query = query.order("created_at", desc=True).limit(limit)
+        response = await query.execute()
 
         alerts = []
-        for row in rows:
-            alert = row[0]
-            score = compute_priority_score(
-                alert.severity,
-                float(alert.value or 0) - float(alert.threshold or 0),
-                float(alert.value or 0),
-                float(alert.threshold or 0),
-            )
+        for row in response.data:
+            inst = row.get("dim_institution", {}) or {}
+            metric = row.get("dim_metric", {}) or {}
+            
+            # Use DB priority_score if available, otherwise compute
+            db_score = float(row.get("priority_score")) if row.get("priority_score") is not None else None
+            val = float(row.get("value")) if row.get("value") is not None else 0.0
+            thr = float(row.get("threshold")) if row.get("threshold") is not None else 0.0
+            dp = float(row.get("delta_pct")) if row.get("delta_pct") is not None else 0.0
+            
+            if db_score is None:
+                score = compute_priority_score(row.get("severity"), dp, val, thr)
+            else:
+                score = db_score / 100.0
+
             alerts.append({
-                "id": alert.id,
-                "institution_id": alert.institution_id,
-                "institution_name": row.institution_name,
-                "institution_code": row.institution_code,
-                "department_id": alert.department_id,
-                "metric_id": alert.metric_id,
-                "metric_code": row.metric_code,
-                "metric_name": row.metric_name,
-                "severity": alert.severity,
-                "value": float(alert.value) if alert.value else None,
-                "threshold": float(alert.threshold) if alert.threshold else None,
-                "message": alert.message,
-                "is_resolved": alert.is_resolved,
-                "resolved_at": alert.resolved_at.isoformat() if alert.resolved_at else None,
-                "created_at": alert.created_at.isoformat() if alert.created_at else None,
+                "id": row.get("id"),
+                "institution_id": row.get("institution_id"),
+                "institution_name": inst.get("name"),
+                "institution_code": inst.get("code"),
+                "department_id": row.get("department_id"),
+                "metric_id": row.get("metric_id"),
+                "metric_code": metric.get("code"),
+                "metric_name": metric.get("name"),
+                "severity": row.get("severity"),
+                "alert_type": row.get("alert_type"),
+                "value": val,
+                "threshold": thr,
+                "delta_pct": dp,
+                "message": row.get("message"),
+                "explanation": row.get("explanation"),
+                "recommended_action": row.get("recommended_action"),
+                "is_resolved": row.get("is_resolved"),
+                "resolved_by": row.get("resolved_by"),
+                "resolved_at": row.get("resolved_at"),
+                "resolution_note": row.get("resolution_note"),
+                "created_at": row.get("created_at"),
                 "priority": priority_label(score),
                 "priority_score": score,
             })
 
-        # Sort by priority score descending
         alerts.sort(key=lambda x: x["priority_score"], reverse=True)
         return alerts
 
-    async def resolve_alert(self, db: AsyncSession, alert_id: int) -> bool:
-        """Mark an alert as resolved."""
-        result = await db.execute(
-            update(Alert)
-            .where(Alert.id == alert_id)
-            .values(is_resolved=True, resolved_at=datetime.now(timezone.utc))
-        )
-        await db.commit()
-        return result.rowcount > 0
+    async def resolve_alert(
+        self, db: AsyncClient, alert_id: int,
+        resolved_by: str | None = None,
+        resolution_note: str | None = None,
+    ) -> bool:
+        """Mark an alert as resolved with optional attribution."""
+        values = {
+            "is_resolved": True,
+            "resolved_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if resolved_by:
+            values["resolved_by"] = resolved_by
+        if resolution_note:
+            values["resolution_note"] = resolution_note
+            
+        resp = await db.table("alerts").update(values).eq("id", alert_id).execute()
+        return len(resp.data) > 0
 
-    async def get_summary(self, db: AsyncSession) -> Dict[str, Any]:
+    async def get_summary(self, db: AsyncClient) -> Dict[str, Any]:
         """Alert summary with counts by severity and institution."""
-        total = await db.execute(select(func.count(Alert.id)))
-        critical = await db.execute(
-            select(func.count(Alert.id)).where(Alert.severity == "critical", Alert.is_resolved == False)
-        )
-        warning = await db.execute(
-            select(func.count(Alert.id)).where(Alert.severity == "warning", Alert.is_resolved == False)
-        )
-        resolved = await db.execute(
-            select(func.count(Alert.id)).where(Alert.is_resolved == True)
-        )
-
-        # By institution
-        by_inst = await db.execute(
-            select(
-                Institution.name,
-                Institution.code,
-                func.count(Alert.id).label("count"),
-            )
-            .join(Institution, Alert.institution_id == Institution.id)
-            .where(Alert.is_resolved == False)
-            .group_by(Institution.name, Institution.code)
-            .order_by(func.count(Alert.id).desc())
-        )
+        total_resp = await db.table("alerts").select("id", count="exact").execute()
+        total = total_resp.count if total_resp.count is not None else 0
+        
+        crit_resp = await db.table("alerts").select("id", count="exact").eq("severity", "critical").eq("is_resolved", False).execute()
+        critical = crit_resp.count if crit_resp.count is not None else 0
+        
+        warn_resp = await db.table("alerts").select("id", count="exact").eq("severity", "warning").eq("is_resolved", False).execute()
+        warning = warn_resp.count if warn_resp.count is not None else 0
+        
+        res_resp = await db.table("alerts").select("id", count="exact").eq("is_resolved", True).execute()
+        resolved = res_resp.count if res_resp.count is not None else 0
+        
+        # Grouping by institution is not natively supported via Supabase Python SDK easily
+        # Fetch all unresolved to do in memory
+        unres_resp = await db.table("alerts").select("institution_id, dim_institution(name, code)").eq("is_resolved", False).execute()
+        
+        inst_counts = {}
+        for r in unres_resp.data:
+            inst = r.get("dim_institution")
+            if not inst:
+                continue
+            code = inst.get("code")
+            name = inst.get("name")
+            key = (code, name)
+            if key not in inst_counts:
+                inst_counts[key] = 0
+            inst_counts[key] += 1
+            
+        by_inst = [{"code": k[0], "name": k[1], "count": v} for k, v in inst_counts.items()]
+        by_inst.sort(key=lambda x: x["count"], reverse=True)
 
         return {
-            "total": total.scalar() or 0,
-            "critical": critical.scalar() or 0,
-            "warning": warning.scalar() or 0,
-            "resolved": resolved.scalar() or 0,
-            "unresolved": (total.scalar() or 0) - (resolved.scalar() or 0),
-            "by_institution": [
-                {"name": r.name, "code": r.code, "count": r.count}
-                for r in by_inst.all()
-            ],
+            "total": total,
+            "critical": critical,
+            "warning": warning,
+            "resolved": resolved,
+            "unresolved": total - resolved,
+            "by_institution": by_inst,
         }
 
 

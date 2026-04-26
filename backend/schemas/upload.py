@@ -11,10 +11,10 @@ from pydantic import BaseModel
 
 
 class UploadResponse(BaseModel):
-    upload_id: int
-    filename: str
-    institution_id: int
-    status: str
+    upload_id: int = 0
+    filename: str = ""
+    institution_id: int = 0
+    status: str = ""
     rows_parsed: int = 0
     rows_inserted: int = 0
     rows_failed: int = 0

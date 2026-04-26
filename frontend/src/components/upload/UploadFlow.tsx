@@ -1,22 +1,17 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, CheckCircle2, Edit2 } from 'lucide-react'
+import { Upload, CheckCircle2, Edit2, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-type State = 'idle' | 'processing' | 'confirm'
+type State = 'idle' | 'uploading' | 'validating' | 'confirm' | 'done' | 'error'
 
-const STEPS = ['Extraction OCR', 'Validation KPIs', 'Prêt pour confirmation']
+const STEPS = ['Téléversement', 'Validation KPIs', 'Prêt pour confirmation']
 
-const MOCK_EXTRACTED = [
-  { kpi: 'Taux de réussite', valeur: '78%', domaine: 'Académique', status: 'confirmed' },
-  { kpi: "Taux d'abandon", valeur: '12%', domaine: 'Académique', status: 'confirmed' },
-  { kpi: 'Budget consommé', valeur: '2 940 000 TND', domaine: 'Finance', status: 'confirmed' },
-  { kpi: "Taux d'exécution budgétaire", valeur: '70%', domaine: 'Finance', status: 'confirmed' },
-  { kpi: "Taux d'employabilité", valeur: '64%', domaine: 'Insertion', status: 'confirmed' },
-  { kpi: 'Consommation énergétique', valeur: '198 000 kWh', domaine: 'ESG', status: 'confirmed' },
-]
+interface ExtractedKPI {
+  [key: string]: string | number
+}
 
 export default function UploadFlow() {
   const [uiState, setUiState] = useState<State>('idle')
@@ -24,41 +19,114 @@ export default function UploadFlow() {
   const [currentStep, setCurrentStep] = useState(0)
   const [dragOver, setDragOver] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<ExtractedKPI[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [institutionId] = useState(10)
 
-  const startProcessing = useCallback(async () => {
-    setUiState('processing')
+  const uploadFile = useCallback(async (file: File) => {
+    setFile(file)
+    setUiState('uploading')
     setProgress(0)
     setCurrentStep(0)
+    setError(null)
 
-    for (let step = 0; step < STEPS.length; step++) {
-      setCurrentStep(step)
-      for (let p = step * 33; p <= (step + 1) * 33; p += 2) {
-        await new Promise((r) => setTimeout(r, 60))
-        setProgress(Math.min(p, 99))
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('institution_id', String(institutionId))
+    formData.append('domain_code', 'STU')
+
+    try {
+      // Upload
+      setCurrentStep(0)
+      for (let p = 0; p <= 33; p += 5) {
+        setProgress(p)
+        await new Promise(r => setTimeout(r, 30))
       }
+
+      // Validate
+      setUiState('validating')
+      setCurrentStep(1)
+      for (let p = 33; p <= 66; p += 5) {
+        setProgress(p)
+        await new Promise(r => setTimeout(r, 30))
+      }
+
+      // Extract preview (OCR simulation - AI agent later)
+      const extractFormData = new FormData()
+      extractFormData.append('file', file)
+
+      const extractRes = await fetch('/api/v1/upload/extract', {
+        method: 'POST',
+        body: extractFormData,
+      })
+
+      if (!extractRes.ok) {
+        throw new Error('Failed to extract preview')
+      }
+
+      const extractData = await extractRes.json()
+      setPreview(extractData.preview || [])
+
+      setProgress(100)
+      setUiState('confirm')
+    } catch (err) {
+      console.error('Upload error:', err)
+      setError(err instanceof Error ? err.message : 'Upload failed')
+      setUiState('error')
     }
-    setProgress(100)
-    await new Promise((r) => setTimeout(r, 400))
-    setUiState('confirm')
+  }, [institutionId])
+
+  const handleSubmit = useCallback(async () => {
+    if (!file) return
+
+    setUiState('uploading')
+    setProgress(0)
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('institution_id', String(institutionId))
+    formData.append('domain_code', 'STU')
+
+    try {
+      const res = await fetch('/api/v1/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await res.json()
+      setProgress(100)
+      setSubmitted(true)
+      setUiState('done')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Submit failed')
+      setUiState('error')
+    }
+  }, [file, institutionId])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const droppedFile = e.dataTransfer.files[0]
+    if (droppedFile) uploadFile(droppedFile)
+  }, [uploadFile])
+
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) uploadFile(selectedFile)
+  }, [uploadFile])
+
+  const updateKPI = useCallback((index: number, field: string, value: string | number) => {
+    setPreview(prev => prev.map((kpi, i) =>
+      i === index ? { ...kpi, [field]: value } : kpi
+    ))
   }, [])
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      setDragOver(false)
-      startProcessing()
-    },
-    [startProcessing],
-  )
-
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files?.length) startProcessing()
-    },
-    [startProcessing],
-  )
-
-  if (submitted) {
+  if (submitted || uiState === 'done') {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -67,8 +135,17 @@ export default function UploadFlow() {
       >
         <CheckCircle2 className="h-12 w-12 text-emerald-500" />
         <p className="font-semibold text-gray-800">Données soumises avec succès</p>
-        <p className="text-sm text-gray-400">Les KPIs ont été intégrés au système CarthaVillage.</p>
-        <Button variant="outline" size="sm" onClick={() => { setSubmitted(false); setUiState('idle') }}>
+        <p className="text-sm text-gray-400">Les KPIs ont été intégrés au système UCAR.</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setSubmitted(false)
+            setUiState('idle')
+            setPreview([])
+            setFile(null)
+          }}
+        >
           Soumettre un autre fichier
         </Button>
       </motion.div>
@@ -92,19 +169,24 @@ export default function UploadFlow() {
               dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
             }`}
           >
-            <input type="file" className="sr-only" accept=".xlsx,.csv,.pdf" onChange={handleFileInput} />
+            <input
+              type="file"
+              className="sr-only"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileInput}
+            />
             <Upload className={`h-8 w-8 ${dragOver ? 'text-blue-500' : 'text-gray-300'}`} />
             <div className="text-center">
               <p className="text-sm font-medium text-gray-700">
                 Déposez votre fichier ici ou cliquez pour parcourir
               </p>
-              <p className="text-xs text-gray-400 mt-1">Formats acceptés : Excel, CSV, PDF</p>
+              <p className="text-xs text-gray-400 mt-1">Formats acceptés : Excel, CSV</p>
             </div>
           </label>
         </motion.div>
       )}
 
-      {uiState === 'processing' && (
+      {(uiState === 'uploading' || uiState === 'validating') && (
         <motion.div
           key="processing"
           initial={{ opacity: 0 }}
@@ -113,7 +195,7 @@ export default function UploadFlow() {
           className="space-y-6 py-6"
         >
           <div className="text-center">
-            <p className="font-medium text-gray-800">Analyse en cours par CarthaVillage Intelligence...</p>
+            <p className="font-medium text-gray-800">Analyse en cours par NABD Intelligence...</p>
             <p className="text-sm text-gray-400 mt-1">Extraction et validation des indicateurs</p>
           </div>
 
@@ -151,7 +233,7 @@ export default function UploadFlow() {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-emerald-500" />
             <p className="font-medium text-gray-800">
-              {MOCK_EXTRACTED.length} indicateurs extraits — vérifiez et confirmez
+              {preview.length} indicateurs extraits — vérifiez et confirmez
             </p>
           </div>
 
@@ -159,20 +241,28 @@ export default function UploadFlow() {
             <TableHeader>
               <TableRow>
                 <TableHead>Indicateur</TableHead>
-                <TableHead>Valeur extraite</TableHead>
-                <TableHead>Domaine</TableHead>
+                <TableHead>Valeur</TableHead>
+                <TableHead>Établissement</TableHead>
                 <TableHead className="w-16"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_EXTRACTED.map((row, i) => (
+              {preview.map((kpi, i) => (
                 <TableRow key={i}>
-                  <TableCell className="font-medium text-sm">{row.kpi}</TableCell>
-                  <TableCell className="text-sm text-blue-700 font-mono">{row.valeur}</TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {kpi.metric_code || kpi.metric || kpi.metric_code?.toString()}
+                  </TableCell>
                   <TableCell>
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                      {row.domaine}
-                    </span>
+                    <input
+                      type="number"
+                      value={kpi.value || 0}
+                      onChange={(e) => updateKPI(i, 'value', parseFloat(e.target.value) || 0)}
+                      className="w-20 px-2 py-1 text-sm border rounded"
+                      step={0.1}
+                    />
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600">
+                    {kpi.institution_code || '-'}
                   </TableCell>
                   <TableCell>
                     <button className="text-gray-400 hover:text-blue-600 transition-colors">
@@ -187,17 +277,41 @@ export default function UploadFlow() {
           <div className="flex gap-2 pt-2">
             <Button
               className="flex-1 bg-blue-800 hover:bg-blue-900"
-              onClick={() => setSubmitted(true)}
+              onClick={handleSubmit}
             >
               Soumettre au système
             </Button>
             <Button
               variant="outline"
-              onClick={() => { setUiState('idle'); setProgress(0) }}
+              onClick={() => { setUiState('idle'); setProgress(0); setPreview([]) }}
             >
               Annuler
             </Button>
           </div>
+        </motion.div>
+      )}
+
+      {uiState === 'error' && (
+        <motion.div
+          key="error"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="flex items-center gap-2 text-red-600 p-4 bg-red-50 rounded-lg"
+        >
+          <AlertCircle className="h-5 w-5" />
+          <div>
+            <p className="font-medium">Erreur de traitement</p>
+            <p className="text-sm">{error}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setUiState('idle')}
+            className="ml-auto"
+          >
+            Réessayer
+          </Button>
         </motion.div>
       )}
     </AnimatePresence>

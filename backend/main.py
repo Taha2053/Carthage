@@ -12,6 +12,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
 
 from core.config import settings
 from core.events import event_bus
@@ -69,7 +72,7 @@ app = FastAPI(
 # ── CORS ─────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=["*"],  # Open for local dev — restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -89,3 +92,11 @@ async def root():
         "docs": "/docs",
         "status": "running",
     }
+
+
+# ── RAG Chat UI ──────────────────────────────────────────────
+@app.get("/rag", tags=["Tools"], include_in_schema=False)
+async def rag_chat_ui():
+    """Serve the RAG chat HTML interface."""
+    html_path = os.path.join(os.path.dirname(__file__), "rag_chat.html")
+    return FileResponse(html_path, media_type="text/html")

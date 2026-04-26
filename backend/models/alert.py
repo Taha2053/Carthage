@@ -33,11 +33,18 @@ class Alert(Base):
         BigInteger, ForeignKey("fact_kpis.id")
     )
     severity: Mapped[str] = mapped_column(String(10), nullable=False)
+    alert_type: Mapped[str] = mapped_column(String(30), default="threshold")
     value: Mapped[float | None] = mapped_column(Numeric(15, 4))
     threshold: Mapped[float | None] = mapped_column(Numeric(15, 4))
+    delta_pct: Mapped[float | None] = mapped_column(Numeric(8, 2))
     message: Mapped[str | None] = mapped_column(Text)
+    explanation: Mapped[str | None] = mapped_column(Text)
+    recommended_action: Mapped[str | None] = mapped_column(Text)
+    priority_score: Mapped[float | None] = mapped_column(Numeric(5, 2))
     is_resolved: Mapped[bool] = mapped_column(Boolean, default=False)
+    resolved_by: Mapped[str | None] = mapped_column(String(255))
     resolved_at = mapped_column(DateTime(timezone=True), nullable=True)
+    resolution_note: Mapped[str | None] = mapped_column(Text)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

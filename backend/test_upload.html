@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCAR - Test Upload</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { color: #1a365d; margin-bottom: 20px; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        h2 { color: #2d3748; font-size: 18px; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .btn { background: #1e40af; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn:hover { background: #1e3a8a; transform: translateY(-1px); }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn-success { background: #059669; }
+        .btn-danger { background: #dc2626; }
+        .file-drop { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .file-drop:hover { border-color: #3b82f6; background: #eff6ff; }
+        .file-drop.dragover { border-color: #3b82f6; background: #dbeafe; }
+        input[type="file"] { display: none; }
+        .info { background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; }
+        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #64748b; font-size: 14px; }
+        .info-value { color: #1e293b; font-weight: 600; }
+        .status { padding: 12px 16px; border-radius: 8px; margin: 16px 0; }
+        .status-success { background: #d1fae5; color: #065f46; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+        .status-loading { background: #e0f2fe; color: #075985; }
+        .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin: 16px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #1e40af); transition: width 0.3s; }
+        .steps { margin: 20px 0; }
+        .step { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+        .step-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; background: #e2e8f0; color: #64748b; }
+        .step.active .step-num { background: #1e40af; color: white; animation: pulse 1s infinite; }
+        .step.done .step-num { background: #059669; color: white; }
+        .step-label { color: #64748b; }
+        .step.active .step-label { color: #1e40af; font-weight: 600; }
+        .step.done .step-label { color: #059669; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; color: #64748b; font-size: 12px; text-transform: uppercase; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-error { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 12px; max-height: 300px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .tab { padding: 8px 16px; border: none; background: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .tab.active { background: #1e40af; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 UCAR Intelligence Hub - Test Upload</h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('upload')">Upload</button>
+            <button class="tab" onclick="showTab('validate')">Validate</button>
+            <button class="tab" onclick="showTab('history')">History</button>
+            <button class="tab" onclick="showTab('test')">Test Data</button>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="tab-upload" class="tab-content active">
+            <div class="card">
+                <h2>📤 Upload & Ingest KPI File</h2>
+                
+                <div class="grid">
+                    <div>
+                        <label for="institution_id">Institution ID</label>
+                        <input type="number" id="institution_id" value="1" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label for="domain_code">Domain Code</label>
+                        <select id="domain_code" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                            <option value="STU">STU - Students</option>
+                            <option value="HR">HR - Human Resources</option>
+                            <option value="FIN">FIN - Finance</option>
+                            <option value="RES">RES - Research</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.docx,.doc">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📁</div>
+                    <p style="font-size: 18px; font-weight: 600; color: #475569;">Drop your file here or click to browse</p>
+                    <p style="color: #94a3b8; margin-top: 8px;">CSV, Excel, PDF, Images, DOC formats supported</p>
+                </div>
+
+                <button class="btn" id="uploadBtn" onclick="uploadFile()" disabled>Upload File</button>
+            </div>
+
+            <div class="card" id="uploadStatus" style="display: none;">
+                <h2>📊 Status</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="steps" id="steps">
+                    <div class="step" id="step1"><div class="step-num">1</div><div class="step-label">Téléversement</div></div>
+                    <div class="step" id="step2"><div class="step-num">2</div><div class="step-label">Validation</div></div>
+                    <div class="step" id="step3"><div class="step-num">3</div><div class="step-label">Insertion</div></div>
+                </div>
+                <div id="statusMessage"></div>
+                <div id="resultInfo" class="info" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Validate Tab -->
+        <div id="tab-validate" class="tab-content">
+            <div class="card">
+                <h2>✅ Validate File (No Storage)</h2>
+                <div class="file-drop" id="validateFileDrop" onclick="document.getElementById('validateInput').click()">
+                    <input type="file" id="validateInput" accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg,.docx,.doc">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                    <p style="font-size: 18px; font-weight: 600; color: #475569;">Drop file to validate</p>
+                </div>
+                <button class="btn" id="validateBtn" onclick="validateFile()" disabled>Validate</button>
+                <div id="validateResult"></div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="tab-history" class="tab-content">
+            <div class="card">
+                <h2>📜 Upload History</h2>
+                <button class="btn" onclick="loadHistory()">Refresh History</button>
+                <div id="historyList"></div>
+            </div>
+        </div>
+
+        <!-- Test Data Tab -->
+        <div id="tab-test" class="tab-content">
+            <div class="card">
+                <h2>🧪 Generate Test Data</h2>
+                <button class="btn btn-success" onclick="generateCSV()">Download Test CSV</button>
+                <button class="btn btn-success" onclick="generateXLSX()">Download Test XLSX</button>
+            </div>
+            <div class="card">
+                <h2>📋 Available Metrics</h2>
+                <pre id="metricsList">Loading...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        const API_BASE = 'http://localhost:8000/api/v1';
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            if (tab === 'history') loadHistory();
+            if (tab === 'test') loadMetrics();
+        }
+
+        // File drop handling
+        const fileDrop = document.getElementById('fileDrop');
+        fileDrop.addEventListener('dragover', (e) => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+        fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+        fileDrop.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDrop.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) setFile(file);
+        });
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            if (e.target.files[0]) setFile(e.target.files[0]);
+        });
+        document.getElementById('validateInput').addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                selectedFile = e.target.files[0];
+                document.getElementById('validateBtn').disabled = false;
+            }
+        });
+
+        function setFile(file) {
+            selectedFile = file;
+            document.getElementById('uploadBtn').disabled = false;
+            const status = document.getElementById('uploadStatus');
+            status.style.display = 'block';
+            document.getElementById('statusMessage').innerHTML = `<div class="status status-loading">📄 Fichier sélectionné: ${file.name} (${(file.size / 1024).toFixed(1)} KB)</div>`;
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) return;
+
+            const institutionId = document.getElementById('institution_id').value;
+            const domainCode = document.getElementById('domain_code').value;
+            
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('statusMessage').innerHTML = '<div class="status status-loading">⏳ Upload en cours...</div>';
+
+            // Simulate steps
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`step${i}`).classList.add('active');
+                await new Promise(r => setTimeout(r, 800));
+                document.getElementById(`step${i}`).classList.remove('active');
+                document.getElementById(`step${i}`).classList.add('done');
+                document.getElementById('progressFill').style.width = `${i * 33}%`;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('institution_id', institutionId);
+                formData.append('domain_code', domainCode);
+
+                const res = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+
+                document.getElementById('progressFill').style.width = '100%';
+
+                if (res.ok) {
+                    document.getElementById('statusMessage').innerHTML = `<div class="status status-success">✅ ${data.message}</div>`;
+                    document.getElementById('resultInfo').style.display = 'block';
+                    document.getElementById('resultInfo').innerHTML = `
+                        <div class="info-row"><span class="info-label">Upload ID</span><span class="info-value">${data.upload_id}</span></div>
+                        <div class="info-row"><span class="info-label">Rows Parsed</span><span class="info-value">${data.rows_parsed}</span></div>
+                        <div class="info-row"><span class="info-label">Rows Inserted</span><span class="info-value">${data.rows_inserted}</span></div>
+                        <div class="info-row"><span class="info-label">Rows Failed</span><span class="info-value">${data.rows_failed}</span></div>
+                        <div class="info-row"><span class="info-label">Quality Score</span><span class="info-value">${data.data_quality_score || 0}%</span></div>
+                    `;
+                } else {
+                    throw new Error(data.detail || 'Upload failed');
+                }
+            } catch (err) {
+                document.getElementById('statusMessage').innerHTML = `<div class="status status-error">❌ Erreur: ${err.message}</div>`;
+            }
+
+            document.getElementById('uploadBtn').disabled = false;
+        }
+
+        async function validateFile() {
+            if (!selectedFile) return;
+
+            document.getElementById('validateBtn').disabled = true;
+            document.getElementById('validateResult').innerHTML = '<div class="status status-loading">⏳ Validation en cours...</div>';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                const res = await fetch(`${API_BASE}/upload/validate`, { method: 'POST', body: formData });
+                const data = await res.json();
+
+                let html = `<div class="${data.is_valid ? 'status status-success' : 'status status-error'}">`;
+                html += `<strong>${data.is_valid ? '✅ Valide' : '⚠️ Invalide'}</strong> - `;
+                html += `${data.valid_rows}/${data.total_rows} lignes valides</div>`;
+
+                if (data.errors.length > 0) {
+                    html += '<table><tr><th>Ligne</th><th>Erreur</th></tr>';
+                    data.errors.forEach(e => html += `<tr><td>${e.row}</td><td>${e.error}</td></tr>`);
+                    html += '</table>';
+                }
+
+                if (data.detected_metrics && data.detected_metrics.length > 0) {
+                    html += `<div class="info"><strong>Métriques détectées:</strong> ${data.detected_metrics.join(', ')}</div>`;
+                }
+
+                document.getElementById('validateResult').innerHTML = html;
+            } catch (err) {
+                document.getElementById('validateResult').innerHTML = `<div class="status status-error">❌ Erreur: ${err.message}</div>`;
+            }
+
+            document.getElementById('validateBtn').disabled = false;
+        }
+
+        async function loadHistory() {
+            const res = await fetch(`${API_BASE}/upload/history?limit=20`);
+            const data = await res.json();
+
+            let html = '<table><tr><th>ID</th><th>File</th><th>Status</th><th>Rows</th><th>Quality</th><th>Date</th></tr>';
+            data.forEach(u => {
+                html += `<tr>
+                    <td>${u.id}</td>
+                    <td>${u.filename}</td>
+                    <td><span class="badge ${u.status === 'completed' ? 'badge-success' : 'badge-warning'}">${u.status}</span></td>
+                    <td>${u.rows_inserted || 0}/${u.rows_parsed || 0}</td>
+                    <td>${u.data_quality_score ? u.data_quality_score.toFixed(1) + '%' : '-'}</td>
+                    <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                </tr>`;
+            });
+            html += '</table>';
+
+            document.getElementById('historyList').innerHTML = html || '<p>Aucune donnée</p>';
+        }
+
+        async function loadMetrics() {
+            document.getElementById('metricsList').textContent = `Allowed MIME types:\nimage/*,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword`;
+        }
+
+        function generateCSV() {
+            const csv = `metric_code,value,institution_code,academic_year,semester
+enrolled_students,1250,ENSTAB,2024-2025,1
+avg_grade,72.5,ENSTAB,2024-2025,1
+graduation_rate,85.0,ENSTAB,2024-2025,1
+repetition_rate,8.2,ENSTAB,2024-2025,1
+dropout_rate,12.3,ENSTAB,2024-2025,1
+attendance_rate,94.5,ENSTAB,2024-2025,1
+success_rate,78.0,ENSTAB,2024-2025,1
+budget_execution_rate,70.2,ENSTAB,2024-2025,1
+absenteeism_rate,5.8,ENSTAB,2024-2025,1
+employability_rate,64.0,ENSTAB,2024-2025,1`;
+
+            downloadFile(csv, 'test_kpis.csv', 'text/csv');
+        }
+
+        function generateXLSX() {
+            generateCSV();
+            alert('Pour XLSX, utilisez Excel pour convertir le CSV généré, ou utilisez la fonction CSV.');
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

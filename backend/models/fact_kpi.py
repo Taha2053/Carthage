@@ -33,7 +33,7 @@ class FactKPI(Base):
     value_previous: Mapped[float | None] = mapped_column(Numeric(15, 4))
     # delta_pct is GENERATED ALWAYS — read only
     delta_pct: Mapped[float | None] = mapped_column(Numeric(8, 2), insert_default=None)
-    source: Mapped[str] = mapped_column(String(50), default="manual")
+    source: Mapped[str] = mapped_column(String(50), default="computed")
     is_estimated: Mapped[bool] = mapped_column(Boolean, default=False)
     confidence: Mapped[float | None] = mapped_column(Numeric(4, 2))
     notes: Mapped[str | None] = mapped_column(Text)

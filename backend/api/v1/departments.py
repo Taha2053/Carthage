@@ -1,14 +1,16 @@
 """
-API v1 — Departments
+API v1 — Departments CRUD
 """
+
 from __future__ import annotations
+
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from supabase._async.client import AsyncClient
+
 from core.database import get_db
-from models.department import Department
-from schemas.department import DepartmentCreate, DepartmentResponse
+from schemas.department import DepartmentCreate, DepartmentResponse, DepartmentUpdate
 
 router = APIRouter(prefix="/departments", tags=["Departments"])
 
@@ -16,29 +18,47 @@ router = APIRouter(prefix="/departments", tags=["Departments"])
 @router.get("", response_model=list[DepartmentResponse])
 async def list_departments(
     institution_id: Optional[int] = Query(None),
-    db: AsyncSession = Depends(get_db),
+    is_active: Optional[bool] = Query(None),
+    db: AsyncClient = Depends(get_db),
 ):
-    query = select(Department)
-    if institution_id:
-        query = query.where(Department.institution_id == institution_id)
-    query = query.order_by(Department.name)
-    result = await db.execute(query)
-    return result.scalars().all()
+    query = db.table("dim_department").select("*")
+    if institution_id is not None:
+        query = query.eq("institution_id", institution_id)
+    if is_active is not None:
+        query = query.eq("is_active", is_active)
+    query = query.order("name")
+    
+    response = await query.execute()
+    return response.data
 
 
 @router.get("/{department_id}", response_model=DepartmentResponse)
-async def get_department(department_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Department).where(Department.id == department_id))
-    dept = result.scalar_one_or_none()
-    if not dept:
+async def get_department(department_id: int, db: AsyncClient = Depends(get_db)):
+    response = await db.table("dim_department").select("*").eq("id", department_id).execute()
+    if not response.data:
         raise HTTPException(status_code=404, detail="Department not found")
-    return dept
+    return response.data[0]
 
 
 @router.post("", response_model=DepartmentResponse, status_code=201)
-async def create_department(data: DepartmentCreate, db: AsyncSession = Depends(get_db)):
-    dept = Department(**data.model_dump())
-    db.add(dept)
-    await db.flush()
-    await db.refresh(dept)
-    return dept
+async def create_department(data: DepartmentCreate, db: AsyncClient = Depends(get_db)):
+    response = await db.table("dim_department").insert(data.model_dump(exclude_unset=True)).execute()
+    if not response.data:
+        raise HTTPException(status_code=400, detail="Could not create department")
+    return response.data[0]
+
+
+@router.patch("/{department_id}", response_model=DepartmentResponse)
+async def update_department(
+    department_id: int,
+    data: DepartmentUpdate,
+    db: AsyncClient = Depends(get_db),
+):
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        return await get_department(department_id, db)
+        
+    response = await db.table("dim_department").update(update_data).eq("id", department_id).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return response.data[0]

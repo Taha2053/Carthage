@@ -1,53 +1,36 @@
 """
-UCAR Intelligence Hub — Async Database Engine
-Uses SQLAlchemy 2.0 async with asyncpg against Supabase PostgreSQL.
+UCAR Intelligence Hub — Supabase SDK Async Client
+Replaces SQLAlchemy to avoid port 5432/6543 blocking issues.
 """
 
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-from sqlalchemy.orm import DeclarativeBase
-
+import logging
+from supabase import create_async_client, AsyncClient
 from core.config import settings
 
-# ── Engine ───────────────────────────────────────────────────
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-)
+logger = logging.getLogger(__name__)
 
-# ── Session Factory ──────────────────────────────────────────
-async_session_factory = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+# We use the Service Role key since RLS might block anonymous queries.
+if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+    logger.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment!")
 
+# Note: We don't initialize the client at module level because create_async_client 
+# might need an active event loop, but we can do it via a function.
 
-# ── Base Model ───────────────────────────────────────────────
-class Base(DeclarativeBase):
-    """Declarative base for all ORM models."""
-    pass
+_client: AsyncClient | None = None
 
+async def get_supabase() -> AsyncClient:
+    global _client
+    if _client is None:
+        _client = await create_async_client(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_SERVICE_ROLE_KEY
+        )
+    return _client
 
-# ── Dependency ───────────────────────────────────────────────
-async def get_db() -> AsyncSession:  # type: ignore[misc]
-    """
-    FastAPI dependency — yields an async session and closes it after use.
-    """
-    async with async_session_factory() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+# Keep get_db as an alias for get_supabase to minimize refactoring imports in some places, 
+# but it will yield an AsyncClient instead of AsyncSession.
+async def get_db() -> AsyncClient:
+    client = await get_supabase()
+    yield client

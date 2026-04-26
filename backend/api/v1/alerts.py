@@ -1,64 +1,88 @@
 """
-API v1 — Alerts
+API v1 — Alerts CRUD
 """
+
 from __future__ import annotations
+
 from typing import Optional
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from supabase._async.client import AsyncClient
+
 from core.database import get_db
-from schemas.alert import AlertResolve
-from services.alert_engine import alert_engine
+from schemas.alert import AlertCreate, AlertResponse, AlertUpdate
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
 
-@router.get("")
+@router.get("", response_model=list[AlertResponse])
 async def list_alerts(
     institution_id: Optional[int] = Query(None),
     severity: Optional[str] = Query(None),
-    resolved: Optional[bool] = Query(False),
-    limit: int = Query(100, le=500),
-    db: AsyncSession = Depends(get_db),
+    is_resolved: Optional[bool] = Query(None),
+    db: AsyncClient = Depends(get_db),
 ):
-    """All active alerts sorted by AI priority score."""
-    return await alert_engine.get_alerts(db, institution_id, severity, resolved, limit)
+    query = db.table("alerts").select("*")
+    if institution_id is not None:
+        query = query.eq("institution_id", institution_id)
+    if severity:
+        query = query.eq("severity", severity)
+    if is_resolved is not None:
+        query = query.eq("is_resolved", is_resolved)
+    query = query.order("created_at", desc=True)
+    
+    response = await query.execute()
+    return response.data
 
 
-@router.get("/institution/{institution_id}")
-async def alerts_by_institution(
-    institution_id: int, db: AsyncSession = Depends(get_db)
+@router.get("/{alert_id}", response_model=AlertResponse)
+async def get_alert(alert_id: int, db: AsyncClient = Depends(get_db)):
+    response = await db.table("alerts").select("*").eq("id", alert_id).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return response.data[0]
+
+
+@router.post("", response_model=AlertResponse, status_code=201)
+async def create_alert(data: AlertCreate, db: AsyncClient = Depends(get_db)):
+    insert_data = data.model_dump(exclude_unset=True)
+    insert_data["created_at"] = datetime.utcnow().isoformat()
+    response = await db.table("alerts").insert(insert_data).execute()
+    if not response.data:
+        raise HTTPException(status_code=400, detail="Could not create alert")
+    return response.data[0]
+
+
+@router.patch("/{alert_id}", response_model=AlertResponse)
+async def update_alert(
+    alert_id: int,
+    data: AlertUpdate,
+    db: AsyncClient = Depends(get_db),
 ):
-    """Alerts for one institution."""
-    return await alert_engine.get_alerts(db, institution_id=institution_id)
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        return await get_alert(alert_id, db)
+        
+    response = await db.table("alerts").update(update_data).eq("id", alert_id).execute()
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return response.data[0]
 
 
-@router.get("/critical")
-async def critical_alerts(db: AsyncSession = Depends(get_db)):
-    """Only critical unresolved alerts."""
-    return await alert_engine.get_alerts(db, severity="critical", resolved=False)
-
-
-@router.get("/summary")
-async def alert_summary(db: AsyncSession = Depends(get_db)):
-    """Alert summary by severity and institution."""
-    return await alert_engine.get_summary(db)
-
-
-@router.patch("/{alert_id}/resolve")
+@router.post("/{alert_id}/resolve", response_model=AlertResponse)
 async def resolve_alert(
     alert_id: int,
-    body: AlertResolve = None,
-    db: AsyncSession = Depends(get_db),
+    resolved_by: Optional[str] = Query(None, description="Name or ID of solver"),
+    resolution_note: Optional[str] = Query(None, description="How was it resolved?"),
+    db: AsyncClient = Depends(get_db),
 ):
-    """Mark an alert as resolved."""
-    success = await alert_engine.resolve_alert(db, alert_id)
-    if not success:
+    update_data = {
+        "is_resolved": True,
+        "resolved_at": datetime.utcnow().isoformat(),
+        "resolved_by": resolved_by,
+        "resolution_note": resolution_note
+    }
+    response = await db.table("alerts").update(update_data).eq("id", alert_id).execute()
+    if not response.data:
         raise HTTPException(status_code=404, detail="Alert not found")
-    return {"status": "resolved", "alert_id": alert_id}
-
-
-@router.post("/generate")
-async def trigger_alert_generation(db: AsyncSession = Depends(get_db)):
-    """Manually trigger alert generation."""
-    count = await alert_engine.generate_alerts(db)
-    return {"status": "generated", "unresolved_count": count}
+    return response.data[0]
