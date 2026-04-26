@@ -1,13 +1,8 @@
 import api from './api'
 import type { Briefing } from '@/types'
-import { mockUCARBriefing, mockInstitutions } from '@/mock/data'
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 export const getUCARBriefing = async (): Promise<Briefing> => {
-  if (USE_MOCK) return Promise.resolve(mockUCARBriefing)
   const { data } = await api.post('/orchestrator/network-brief')
-  // Transform backend response to Briefing type
   return {
     generatedAt: new Date().toISOString(),
     weekLabel: `Semaine ${Math.ceil(new Date().getDate() / 7)}`,
@@ -22,11 +17,9 @@ export const getUCARBriefing = async (): Promise<Briefing> => {
 }
 
 export const getInstitutionBriefing = async (id: string): Promise<Briefing | null> => {
-  if (USE_MOCK) {
-    const inst = mockInstitutions.find((i) => i.id === id)
-    return Promise.resolve(inst?.briefing ?? null)
-  }
-  const { data } = await api.post(`/orchestrator/analyse?institution_id=${id}`)
+  const numId = parseInt(id)
+  if (isNaN(numId)) return null
+  const { data } = await api.post(`/orchestrator/analyse?institution_id=${numId}`)
   return {
     generatedAt: new Date().toISOString(),
     weekLabel: `Semaine ${Math.ceil(new Date().getDate() / 7)}`,

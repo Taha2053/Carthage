@@ -70,13 +70,13 @@ export interface Institution {
   riskScore: number
   ranking: number
   briefing?: Briefing
-  // Extended fields from DB schema
+  // Extended fields from backend
   code?: string
   short_name?: string
   city?: string
   institution_type?: string
-  governing_body?: string
   current_enrollment?: number
+  governing_body?: string
 }
 
 export interface NLQueryAnswer {

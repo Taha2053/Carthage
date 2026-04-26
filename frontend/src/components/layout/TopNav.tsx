@@ -24,7 +24,7 @@ const NAV_BY_ROLE: Record<Role | 'public', NavItem[]> = {
   ],
   institution_admin: [
     { label: 'Accueil',       href: '/' },
-    { label: 'Tableau de bord', href: '/institution/fsegt' },
+    { label: 'Tableau de bord', href: '/institution/placeholder' },
     { label: 'Classement',    href: '/rankings' },
     { label: 'Alertes',       href: '/alerts' },
     { label: 'Rapports IA',   href: '/reports' },
@@ -81,8 +81,14 @@ export function TopNav() {
   }
 
   const handleNavigation = (item: NavItem) => {
-    if (item.href.includes('/institution/') && institutionId) {
-      navigate(`/institution/${institutionId}`)
+    if (item.href.includes('/institution/')) {
+      // Navigate to institution dashboard using stored institutionId
+      const targetId = institutionId || item.href.split('/institution/')[1]
+      if (targetId && targetId !== 'placeholder') {
+        navigate(`/institution/${targetId}`)
+      } else {
+        navigate('/central')
+      }
     } else {
       navigate(item.href)
     }

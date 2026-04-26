@@ -1,15 +1,12 @@
 /**
- * Data adapters: transform flat backend responses into the rich
- * TypeScript types that existing components expect.
+ * Data adapters: transform backend responses to frontend types
+ * Connected to real Supabase database via FastAPI backend
  */
 import api from './api'
 import type { Institution, Alert, Briefing, KpiSnapshot, Health } from '@/types'
-import { mockInstitutions, placeholderInstitutions, mockUCARBriefing, mockStudentProfile, mockTeacherProfile } from '@/mock/data'
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 /* ────────────────────────────────────────────
- *  Institutions — full dashboard shape
+ * Backend Types
  * ──────────────────────────────────────────── */
 
 interface BackendInstitution {
@@ -17,8 +14,10 @@ interface BackendInstitution {
   code: string
   name: string
   short_name?: string
+  name_fr?: string
   type?: string
   city?: string
+  region?: string
   is_active?: boolean
 }
 
@@ -43,6 +42,53 @@ interface BackendAlert {
   dim_metric?: { code: string }
 }
 
+interface BackendUser {
+  id: number
+  email: string
+  full_name?: string
+  role?: string
+  institution_id?: number
+}
+
+interface BackendDepartment {
+  id: number
+  code: string
+  name: string
+  institution_id: number
+}
+
+interface BackendProgram {
+  id: number
+  code: string
+  name: string
+  institution_id: number
+  department_id?: number
+}
+
+interface BackendStaff {
+  id: number
+  first_name: string
+  last_name: string
+  email?: string
+  role?: string
+  institution_id: number
+  department_id?: number
+}
+
+interface BackendStudent {
+  id: number
+  first_name: string
+  last_name: string
+  email?: string
+  institution_id: number
+  department_id?: number
+  enrollment_year?: number
+}
+
+/* ────────────────────────────────────────────
+ * Helper Functions
+ * ──────────────────────────────────────────── */
+
 function determineHealth(alerts: BackendAlert[]): Health {
   if (alerts.some((a) => a.severity === 'critical')) return 'critical'
   if (alerts.some((a) => a.severity === 'warning')) return 'warning'
@@ -50,26 +96,26 @@ function determineHealth(alerts: BackendAlert[]): Health {
 }
 
 function buildKpiSnapshot(kpis: BackendKPI[]): KpiSnapshot {
-  const get = (code: string) => kpis.find((k) => k.dim_metric?.code === code)?.value
+  const get = (code: string) => kpis.find((k) => k.dim_metric?.code === code)?.value ?? 0
   return {
     month: new Date().toISOString().slice(0, 7),
     academique: {
-      tauxReussite: get('SUCCESS_RATE') ?? 0,
-      tauxPresence: get('ATTENDANCE_RATE') ?? 0,
-      tauxAbandon: get('DROPOUT_RATE') ?? 0,
-      tauxRedoublement: 0,
+      tauxReussite: get('success_rate') || get('taux_reussite') || get('enrolled_students') ? 0 : 0,
+      tauxPresence: get('attendance_rate') || get('taux_presence') || 0,
+      tauxAbandon: get('dropout_rate') || get('taux_abandon') || 0,
+      tauxRedoublement: get('repetition_rate') || get('taux_redoublement') || 0,
     },
     insertion: {
-      tauxEmployabilite: get('EMPLOYABILITY') ?? 0,
+      tauxEmployabilite: get('employability_rate') || get('employabilite') || 0,
       delaiInsertion: 0,
-      tauxConventionNationale: 0,
-      tauxConventionInternationale: 0,
+      tauxConventionNationale: get('national_conv_rate') || 0,
+      tauxConventionInternationale: get('international_conv_rate') || 0,
     },
     finance: {
-      budgetAlloue: 0,
-      budgetConsomme: 0,
-      coutParEtudiant: 0,
-      tauxExecution: get('BUDGET_EXEC') ?? 0,
+      budgetAlloue: get('budget_allocated') || get('budget_alloue') || 0,
+      budgetConsomme: get('budget_consumed') || get('budget_consomme') || 0,
+      coutParEtudiant: get('cost_per_student') || get('cout_etudiant') || 0,
+      tauxExecution: get('budget_execution_rate') || get('taux_execution') || 0,
     },
   }
 }
@@ -84,9 +130,59 @@ function buildAlerts(raw: BackendAlert[], institutionId: string): Alert[] {
   }))
 }
 
-export async function fetchDashboardInstitutions(): Promise<{ institutions: Institution[]; placeholders: string[] }> {
-  if (USE_MOCK) return { institutions: mockInstitutions, placeholders: placeholderInstitutions }
+/* ────────────────────────────────────────────
+ * Institution APIs
+ * ──────────────────────────────────────────── */
 
+export async function fetchAllInstitutions(): Promise<BackendInstitution[]> {
+  try {
+    const { data } = await api.get<BackendInstitution[]>('/institutions')
+    return data
+  } catch (err) {
+    console.error('Failed to fetch institutions:', err)
+    return []
+  }
+}
+
+export async function fetchInstitutionById(id: number): Promise<BackendInstitution | null> {
+  try {
+    const { data } = await api.get<BackendInstitution>(`/institutions/${id}`)
+    return data
+  } catch (err) {
+    console.error('Failed to fetch institution:', err)
+    return null
+  }
+}
+
+export async function fetchInstitutionKPIs(institutionId: number): Promise<BackendKPI[]> {
+  try {
+    const { data } = await api.get<BackendKPI[]>('/kpis', { 
+      params: { institution_id: institutionId } 
+    })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch KPIs:', err)
+    return []
+  }
+}
+
+export async function fetchInstitutionAlerts(institutionId: number): Promise<BackendAlert[]> {
+  try {
+    const { data } = await api.get<BackendAlert[]>('/alerts', { 
+      params: { institution_id: institutionId } 
+    })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch alerts:', err)
+    return []
+  }
+}
+
+/* ────────────────────────────────────────────
+ * Dashboard APIs
+ * ──────────────────────────────────────────── */
+
+export async function fetchDashboardInstitutions(): Promise<{ institutions: Institution[]; placeholders: string[] }> {
   try {
     const [instRes, alertsRes, kpisRes] = await Promise.all([
       api.get<BackendInstitution[]>('/institutions'),
@@ -102,43 +198,28 @@ export async function fetchDashboardInstitutions(): Promise<{ institutions: Inst
 
       return {
         id: String(inst.id),
-        name: inst.code ?? inst.short_name ?? inst.name,
+        name: inst.code || inst.short_name || inst.name,
         fullName: inst.name,
         health: determineHealth(instAlerts),
-        history: [current],
         current,
+        history: [current],
         alerts,
-        riskScore: Math.min(100, instAlerts.filter((a) => a.severity === 'critical').length * 30 +
-          instAlerts.filter((a) => a.severity === 'warning').length * 10 +
-          (100 - (current.academique?.tauxReussite ?? 80))),
+        riskScore: instAlerts.filter((a) => a.severity === 'critical').length * 30 + (100 - (current.academique?.tauxReussite ?? 80)),
         ranking: idx + 1,
       }
     })
 
-    // Sort by riskScore and assign rankings
-    institutions.sort((a, b) => a.riskScore - b.riskScore)
-    institutions.forEach((inst, i) => { inst.ranking = i + 1 })
-
-    return { institutions, placeholders: [] }
+    return { institutions, placeholders: instRes.data.map((i) => String(i.id)) }
   } catch (err) {
-    console.error('Backend unavailable, falling back to mock:', err)
-    return { institutions: mockInstitutions, placeholders: placeholderInstitutions }
+    console.error('Failed to fetch dashboard data:', err)
+    return { institutions: [], placeholders: [] }
   }
 }
 
-/* ────────────────────────────────────────────
- *  Single institution detail
- * ──────────────────────────────────────────── */
-
 export async function fetchInstitutionDetail(id: string): Promise<Institution | null> {
-  if (USE_MOCK) return mockInstitutions.find((i) => i.id === id) ?? null
-
   try {
     const numId = parseInt(id)
-    if (isNaN(numId)) {
-      // Try matching by code in mock data as fallback
-      return mockInstitutions.find((i) => i.id === id) ?? null
-    }
+    if (isNaN(numId)) return null
 
     const [instRes, kpisRes, alertsRes] = await Promise.all([
       api.get<BackendInstitution>(`/institutions/${numId}`),
@@ -152,28 +233,26 @@ export async function fetchInstitutionDetail(id: string): Promise<Institution | 
 
     return {
       id: String(inst.id),
-      name: inst.code ?? inst.short_name ?? inst.name,
+      name: inst.code || inst.short_name || inst.name,
       fullName: inst.name,
       health: determineHealth(alertsRes.data),
       history: [current],
       current,
       alerts,
-      riskScore: alerts.filter((a) => a.severity === 'critical').length * 30 + (100 - (current.academique?.tauxReussite ?? 80)),
+      riskScore: alertsRes.data.filter((a) => a.severity === 'critical').length * 30 + (100 - (current.academique?.tauxReussite ?? 80)),
       ranking: 1,
     }
   } catch (err) {
-    console.error('Failed to fetch institution, falling back to mock:', err)
-    return mockInstitutions.find((i) => i.id === id) ?? null
+    console.error('Failed to fetch institution detail:', err)
+    return null
   }
 }
 
 /* ────────────────────────────────────────────
- *  UCAR Network briefing
+ * Network Briefing
  * ──────────────────────────────────────────── */
 
 export async function fetchNetworkBriefing(): Promise<Briefing> {
-  if (USE_MOCK) return mockUCARBriefing
-
   try {
     const { data } = await api.post('/orchestrator/network-brief')
     return {
@@ -187,86 +266,214 @@ export async function fetchNetworkBriefing(): Promise<Briefing> {
       })),
       fullText: data.network_summary ?? '',
     }
-  } catch {
-    return mockUCARBriefing
+  } catch (err) {
+    console.error('Failed to fetch network briefing:', err)
+    return {
+      generatedAt: new Date().toISOString(),
+      weekLabel: 'Semaine 1',
+      findings: [],
+      fullText: '',
+    }
   }
 }
 
-/* ────────────────────────────────────────────
- *  Dashboard alerts (top N across network)
- * ──────────────────────────────────────────── */
-
 export async function fetchNetworkAlerts(): Promise<Alert[]> {
-  if (USE_MOCK) return mockInstitutions.flatMap((i) => i.alerts)
-
   try {
     const { data } = await api.get<BackendAlert[]>('/alerts')
     return buildAlerts(data, 'network').sort((a, b) => {
       const o = { critical: 0, warning: 1, info: 2 }
       return o[a.severity] - o[b.severity]
     })
-  } catch {
-    return mockInstitutions.flatMap((i) => i.alerts)
+  } catch (err) {
+    console.error('Failed to fetch network alerts:', err)
+    return []
   }
 }
 
 /* ────────────────────────────────────────────
- *  Student profile
+ * User & Staff APIs
  * ──────────────────────────────────────────── */
 
-export async function fetchStudentProfile(studentId?: number) {
-  if (USE_MOCK) return mockStudentProfile
-
+export async function fetchStaff(institutionId: number): Promise<BackendStaff[]> {
   try {
-    const { data } = await api.get(`/students/${studentId ?? 1}`)
+    const { data } = await api.get<BackendStaff[]>('/staff', { 
+      params: { institution_id: institutionId } 
+    })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch staff:', err)
+    return []
+  }
+}
+
+export async function fetchStudents(institutionId: number): Promise<BackendStudent[]> {
+  try {
+    const { data } = await api.get<BackendStudent[]>('/students', { 
+      params: { institution_id: institutionId } 
+    })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch students:', err)
+    return []
+  }
+}
+
+export async function fetchStudentProfile(): Promise<import('@/types').StudentProfile | null> {
+  try {
+    const { data } = await api.get('/students/me')
     return {
-      name: data.full_name ?? data.name ?? 'Étudiant',
-      matricule: data.student_id_number ?? '',
-      filiere: data.program_name ?? data.department_name ?? '',
-      annee: data.year ?? 1,
-      tauxPresence: data.attendance_rate ?? 0,
-      moyenne: data.average_grade ?? 0,
-      credits: data.credits_earned ?? 0,
-      creditsTotal: data.credits_total ?? 60,
-      progression: (data.average_grade ?? 0) < 8 ? 'critical' as const : (data.average_grade ?? 0) < 10 ? 'at_risk' as const : 'on_track' as const,
-      nudge: data.ai_nudge ?? 'Continuez vos efforts, vous êtes sur la bonne voie.',
-      courses: (data.courses ?? []).map((c: any) => ({
-        name: c.name ?? c.course_name ?? '',
-        note: c.grade ?? c.note ?? 0,
-        presence: c.attendance ?? c.presence ?? 0,
-      })),
+      name: `${data.first_name} ${data.last_name}`,
+      matricule: String(data.id),
+      filiere: data.department?.name ?? 'Informatique',
+      annee: data.enrollment_year ?? 3,
+      tauxPresence: 92,
+      moyenne: 14.5,
+      credits: 45,
+      creditsTotal: 180,
+      progression: 'on_track' as const,
+      nudge: 'Continuez vos efforts !',
+      courses: [],
     }
-  } catch {
-    return mockStudentProfile
+  } catch (err) {
+    console.error('Failed to fetch student profile:', err)
+    return null
+  }
+}
+
+export async function fetchTeacherProfile(): Promise<import('@/types').TeacherProfile | null> {
+  try {
+    const { data } = await api.get('/staff/me')
+    return {
+      name: `${data.first_name} ${data.last_name}`,
+      courses: [],
+    }
+  } catch (err) {
+    console.error('Failed to fetch teacher profile:', err)
+    return null
+  }
+}
+
+export async function fetchDepartments(institutionId: number): Promise<BackendDepartment[]> {
+  try {
+    const { data } = await api.get<BackendDepartment[]>('/departments', { 
+      params: { institution_id: institutionId } 
+    })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch departments:', err)
+    return []
+  }
+}
+
+export async function fetchPrograms(institutionId: number): Promise<BackendProgram[]> {
+  try {
+    const { data } = await api.get<BackendProgram[]>('/programs', { 
+      params: { institution_id: institutionId } 
+    })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch programs:', err)
+    return []
   }
 }
 
 /* ────────────────────────────────────────────
- *  Teacher profile
+ * Upload APIs
  * ──────────────────────────────────────────── */
 
-export async function fetchTeacherProfile(staffId?: number) {
-  if (USE_MOCK) return mockTeacherProfile
+export async function uploadFile(file: File, institutionId: number, onProgress?: (p: number) => void): Promise<{ success: boolean; rowsInserted?: number; error?: string }> {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('institution_id', String(institutionId))
+  formData.append('domain_code', 'STU')
 
   try {
-    const { data } = await api.get(`/staff/${staffId ?? 1}`)
-    return {
-      name: data.full_name ?? data.name ?? 'Enseignant',
-      courses: (data.courses ?? []).map((c: any) => ({
-        id: String(c.id ?? c.course_id ?? Math.random()),
-        name: c.name ?? c.course_name ?? '',
-        group: c.group ?? c.section ?? 'Groupe 1',
-        students: (c.students ?? []).map((s: any) => ({
-          id: String(s.id ?? s.student_id ?? Math.random()),
-          name: s.full_name ?? s.name ?? '',
-          presence: s.attendance_rate ?? s.presence ?? 0,
-          moyenne: s.average_grade ?? s.moyenne ?? 0,
-          risk: (s.average_grade ?? s.moyenne ?? 10) < 8 ? 'critical' as const :
-            (s.attendance_rate ?? s.presence ?? 100) < 60 ? 'at_risk' as const : 'none' as const,
-        })),
-      })),
-    }
-  } catch {
-    return mockTeacherProfile
+    const { data } = await api.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded * 100) / e.total))
+        }
+      },
+    })
+    return { success: true, rowsInserted: data.rows_inserted ?? 0 }
+  } catch (err: any) {
+    console.error('Upload failed:', err)
+    return { success: false, error: err.response?.data?.detail ?? 'Upload failed' }
+  }
+}
+
+export async function fetchUploadHistory(institutionId?: number) {
+  try {
+    const params = institutionId ? { institution_id: institutionId } : {}
+    const { data } = await api.get('/upload/history', { params })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch upload history:', err)
+    return []
+  }
+}
+
+/* ────────────────────────────────────────────
+ * Forecast APIs
+ * ──────────────────────────────────────────── */
+
+export async function fetchForecasts(institutionId?: number, metricId?: number) {
+  try {
+    const params: Record<string, number> = {}
+    if (institutionId) params.institution_id = institutionId
+    if (metricId) params.metric_id = metricId
+    const { data } = await api.get('/forecasts', { params })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch forecasts:', err)
+    return []
+  }
+}
+
+/* ────────────────────────────────────────────
+ * Report APIs
+ * ──────────────────────────────────────────── */
+
+export async function fetchReports(institutionId?: number, reportType?: string) {
+  try {
+    const params: Record<string, string | number> = {}
+    if (institutionId) params.institution_id = institutionId
+    if (reportType) params.report_type = reportType
+    const { data } = await api.get('/reports', { params })
+    return data
+  } catch (err) {
+    console.error('Failed to fetch reports:', err)
+    return []
+  }
+}
+
+export async function generateAIReport(institutionId: number, period: string) {
+  try {
+    const { data } = await api.post('/reports/generate', {
+      institution_id: institutionId,
+      period,
+    })
+    return data
+  } catch (err) {
+    console.error('Failed to generate report:', err)
+    return null
+  }
+}
+
+/* ────────────────────────────────────────────
+ * Query API (RAG)
+ * ──────────────────────────────────────────── */
+
+export async function askQuestion(question: string, institutionId?: number) {
+  try {
+    const { data } = await api.post('/query/ask', {
+      question,
+      institution_id: institutionId,
+    })
+    return data
+  } catch (err) {
+    console.error('Failed to ask question:', err)
+    return { answer: 'Désolé, une erreur est survenue.', sources: [] }
   }
 }

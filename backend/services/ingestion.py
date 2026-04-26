@@ -13,7 +13,6 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
-from supabase._async.client import AsyncClient
 from core.events import event_bus
 
 logger = logging.getLogger(__name__)

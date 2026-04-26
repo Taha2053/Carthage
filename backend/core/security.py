@@ -12,7 +12,6 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from supabase._async.client import AsyncClient
 
 from core.config import settings
 from core.database import get_db
@@ -54,7 +53,7 @@ def decode_supabase_token(token: str) -> dict:
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
-    db: AsyncClient = Depends(get_db),
+    db = Depends(get_db),
 ):
     """
     FastAPI dependency — extracts current user from Supabase JWT.

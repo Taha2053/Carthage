@@ -9,7 +9,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
-from supabase._async.client import AsyncClient
 
 from core.database import get_db
 from core.security import get_current_user
@@ -27,7 +26,7 @@ async def get_me(current_user=Depends(get_current_user)):
 @router.post("/sync")
 async def sync_user(
     current_user=Depends(get_current_user),
-    db: AsyncClient = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Sync Supabase auth user to our users table.
@@ -38,7 +37,7 @@ async def sync_user(
         "last_login": datetime.now(timezone.utc).isoformat()
     }
     
-    resp = await db.table("users").update(update_data).eq("id", user_id).execute()
+    resp = db.table("users").update(update_data).eq("id", user_id).execute()
     updated_user = resp.data[0] if resp.data else current_user
 
     return {

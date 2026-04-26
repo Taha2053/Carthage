@@ -9,7 +9,6 @@ import logging
 import re
 from typing import Any, Dict, Optional
 
-from supabase._async.client import AsyncClient
 
 from core.llm import call_llm
 
