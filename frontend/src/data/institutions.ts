@@ -371,3 +371,7 @@ export const TOTAL_STUDENTS = UCAR_INSTITUTIONS.reduce((s, i) => s + i.studentCo
 export const TOTAL_STAFF = UCAR_INSTITUTIONS.reduce((s, i) => s + i.staffCount, 0)
 export const AVG_INSERTION = Math.round(UCAR_INSTITUTIONS.reduce((s, i) => s + i.insertionRate, 0) / UCAR_INSTITUTIONS.length)
 export const TOTAL_PARTNERSHIPS = UCAR_INSTITUTIONS.reduce((s, i) => s + i.internationalPartnerships, 0)
+
+// Approximate values for display
+export const TOTAL_STUDENTS_DISPLAY = '+120K'
+export const TOTAL_STAFF_DISPLAY = '+8K'

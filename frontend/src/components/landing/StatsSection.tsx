@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { TOTAL_STUDENTS, TOTAL_STAFF, AVG_INSERTION, TOTAL_PARTNERSHIPS } from '@/data/institutions'
+import { TOTAL_STUDENTS, TOTAL_STAFF, AVG_INSERTION, TOTAL_PARTNERSHIPS, TOTAL_STUDENTS_DISPLAY, TOTAL_STAFF_DISPLAY } from '@/data/institutions'
 
 function useCountUp(target: number, duration = 1800, start = false) {
   const [value, setValue] = useState(0)
@@ -19,7 +19,7 @@ function useCountUp(target: number, duration = 1800, start = false) {
 }
 
 interface StatProps {
-  value: number
+  value: number | string
   suffix?: string
   label: string
   sub: string
@@ -34,12 +34,12 @@ function StatCard({ value, suffix = '', label, sub, started, delay = 0 }: StatPr
     const t = setTimeout(() => setGo(true), delay)
     return () => clearTimeout(t)
   }, [started, delay])
-  const count = useCountUp(value, 1600, go)
+  const count = useCountUp(typeof value === 'number' ? value : 30, 1600, go)
 
   return (
     <div className="text-center fade-up">
       <p className="font-display text-[52px] leading-none tracking-tighter text-ink num">
-        {count.toLocaleString('fr')}<span className="text-gold text-[36px]">{suffix}</span>
+        {typeof value === 'string' ? value : count.toLocaleString('fr')}<span className="text-gold text-[36px]">{suffix}</span>
       </p>
       <p className="mt-1 text-[14px] font-semibold text-ink2 tracking-tightish">{label}</p>
       <p className="mt-0.5 text-[12px] text-ink3">{sub}</p>
@@ -72,21 +72,21 @@ export default function StatsSection() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <StatCard
-            value={32}
+            value="+30"
             label="Établissements"
             sub="Facultés, écoles, instituts & labo"
             started={started}
             delay={0}
           />
           <StatCard
-            value={TOTAL_STUDENTS}
+            value={TOTAL_STUDENTS_DISPLAY}
             label="Étudiants inscrits"
             sub="Licence, master & doctorat"
             started={started}
             delay={150}
           />
           <StatCard
-            value={TOTAL_STAFF}
+            value={TOTAL_STAFF_DISPLAY}
             label="Enseignants & chercheurs"
             sub="Permanents et associés"
             started={started}
@@ -119,7 +119,7 @@ export default function StatsSection() {
             delay={700}
           />
           <StatCard
-            value={TOTAL_STAFF}
+            value="+2K"
             label="Chercheurs actifs"
             sub="Publications & brevets UCAR"
             started={started}

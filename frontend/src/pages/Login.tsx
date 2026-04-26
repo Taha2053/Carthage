@@ -12,13 +12,12 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    const ok = await login(email, password)
-    if (!ok) {
+    const result = await login(email, password)
+    if (!result.success) {
       setError('Email ou mot de passe incorrect.')
       return
     }
-    const { redirectPath } = useAuthStore.getState()
-    navigate(redirectPath ?? '/central')
+    navigate(result.redirectPath ?? '/central')
   }
 
   const demo = (em: string) => { setEmail(em); setPassword('demo') }
@@ -103,18 +102,18 @@ export default function Login() {
           <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-3">Comptes de démonstration</p>
           <div className="space-y-1.5">
             {[
-              { label: 'Présidence UCAR', email: 'president@ucar.tn', role: 'ucar_central' },
-              { label: 'Directeur FSEGT', email: 'directeur@fsegt.tn', role: 'institution_admin' },
-              { label: 'Enseignant',      email: 'prof@fsegt.tn',      role: 'enseignant' },
-              { label: 'Étudiant',        email: 'etudiant@fsegt.tn',  role: 'etudiant' },
-            ].map(({ label, email: em, role }) => (
+              { label: 'Présidence UCAR', email: 'president@ucar.tn', pass: 'demo', role: 'ucar_central' },
+              { label: 'Directeur FSEGT', email: 'directeur@fsegt.tn', pass: 'demo', role: 'institution_admin' },
+              { label: 'Enseignant',      email: 'prof@fsegt.tn',      pass: 'demo', role: 'enseignant' },
+              { label: 'Étudiant',        email: 'etudiant@fsegt.tn',  pass: 'demo', role: 'etudiant' },
+            ].map(({ label, email: em, pass }) => (
               <button
                 key={em}
-                onClick={() => demo(em)}
+                onClick={() => { setEmail(em); setPassword(pass) }}
                 className="w-full text-left flex items-center justify-between px-3 py-2 rounded-md hover:bg-paper2 transition-colors group"
               >
                 <span className="text-xs text-ink2 group-hover:text-ink">{label}</span>
-                <span className="text-[10px] num text-ink3">{role}</span>
+                <span className="text-[10px] font-mono text-ink3/60">{em} / {pass}</span>
               </button>
             ))}
           </div>

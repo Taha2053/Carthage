@@ -157,7 +157,7 @@ export default function InstitutionGrid({ highlightedId }: Props) {
             Tous les établissements
           </h2>
           <p className="mt-3 text-[14px] text-ink3 max-w-md mx-auto">
-            32 institutions publiques, 3 gouvernorats, une université — explorez, comparez, découvrez.
+            +30 institutions publiques, 3 gouvernorats, une université — explorez, comparez, découvrez.
           </p>
         </div>
 
