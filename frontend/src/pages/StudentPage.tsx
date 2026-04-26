@@ -1,12 +1,40 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { mockStudentProfile } from '@/mock/data'
+import { fetchStudentProfile } from '@/services/adapters'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertTriangle, Sparkles } from 'lucide-react'
+import type { StudentProfile } from '@/types'
 
 export default function StudentPage() {
-  const { name, filiere, annee, tauxPresence, moyenne, credits, creditsTotal, progression, nudge, courses } = mockStudentProfile
+  const [profile, setProfile] = useState<StudentProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchStudentProfile().then((data) => {
+      setProfile(data)
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading || !profile) {
+    return (
+      <div className="space-y-6 py-6 px-6 max-w-[1400px] mx-auto">
+        <div className="h-8 bg-rule rounded w-1/3 animate-pulse" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[1,2,3,4].map((i) => (
+            <div key={i} className="rounded-lg border border-rule bg-paper2/50 p-4 animate-pulse">
+              <div className="h-8 bg-rule rounded w-1/2 mb-2" />
+              <div className="h-3 bg-rule rounded w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const { name, filiere, annee, tauxPresence, moyenne, credits, creditsTotal, progression, nudge, courses } = profile
 
   const progressionColor = progression === 'critical' ? 'text-red-600' : progression === 'at_risk' ? 'text-amber-600' : 'text-emerald-600'
   const progressionLabel = progression === 'critical' ? 'Situation critique' : progression === 'at_risk' ? 'À surveiller' : 'Sur la bonne voie'

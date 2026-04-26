@@ -7,6 +7,12 @@ import CentralDashboard from './pages/CentralDashboard'
 import InstitutionPage from './pages/InstitutionPage'
 import TeacherPage from './pages/TeacherPage'
 import StudentPage from './pages/StudentPage'
+import UploadPage from './pages/UploadPage'
+import ReportsPage from './pages/ReportsPage'
+import ForecastsPage from './pages/ForecastsPage'
+import RankingsPage from './pages/RankingsPage'
+import AlertsPage from './pages/AlertsPage'
+import OrchestratorPage from './pages/OrchestratorPage'
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 
@@ -60,6 +66,56 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin', 'enseignant', 'etudiant']}>
                   <StudentPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ── New AI / Data pages ── */}
+            <Route
+              path="/upload"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
+                  <UploadPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/forecasts"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
+                  <ForecastsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/rankings"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
+                  <RankingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/alerts"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
+                  <AlertsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orchestrator"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central']}>
+                  <OrchestratorPage />
                 </ProtectedRoute>
               }
             />

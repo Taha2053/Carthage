@@ -1,39 +1,11 @@
-import { useRef, useState } from 'react'
-import { mockInstitutions, placeholderInstitutions, mockUCARBriefing } from '@/mock/data'
+import { useEffect, useRef, useState } from 'react'
+import { fetchDashboardInstitutions, fetchNetworkBriefing, fetchNetworkAlerts } from '@/services/adapters'
 import InstitutionCard from '@/components/institutions/InstitutionCard'
 import BriefingCard from '@/components/pulse/BriefingCard'
 import AlertsPanel from '@/components/alerts/AlertsPanel'
 import NLQueryBar from '@/components/query/NLQueryBar'
 import { healthToDot } from '@/utils/health'
-import type { Health } from '@/types'
-
-// ── aggregates ──────────────────────────────────────────────────────────────
-
-const allAlerts = mockInstitutions
-  .flatMap((i) => i.alerts)
-  .sort((a, b) => {
-    const o = { critical: 0, warning: 1, info: 2 }
-    return o[a.severity] - o[b.severity]
-  })
-
-const withAcad = mockInstitutions.filter((i) => i.current.academique)
-const avgReussite = Math.round(
-  withAcad.reduce((s, i) => s + (i.current.academique?.tauxReussite ?? 0), 0) / withAcad.length,
-)
-const avgPresence = Math.round(
-  withAcad.reduce((s, i) => s + (i.current.academique?.tauxPresence ?? 0), 0) / withAcad.length,
-)
-const criticalCount = mockInstitutions.filter((i) => i.health === 'critical').length
-const warningCount  = mockInstitutions.filter((i) => i.health === 'warning').length
-const goodCount     = mockInstitutions.filter((i) => i.health === 'good').length
-
-const NETWORK_SCORE = Math.round(
-  mockInstitutions.reduce((s, i) => s + i.riskScore, 0) / mockInstitutions.length,
-)
-
-const ranked = [...mockInstitutions].sort((a, b) => a.riskScore - b.riskScore)
-
-// ── health dot helper ────────────────────────────────────────────────────────
+import type { Health, Institution, Alert, Briefing } from '@/types'
 
 const HEALTH_GLOW: Record<Health, string> = {
   critical: 'dot-critical',
@@ -49,15 +21,67 @@ const HEALTH_CARD: Record<Health, string> = {
   no_data:  'border-rule bg-paper2',
 }
 
-// ── component ────────────────────────────────────────────────────────────────
-
 type View = 'grid' | 'rank'
 
 export default function CentralDashboard() {
   const nlRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState<View>('grid')
+  const [institutions, setInstitutions] = useState<Institution[]>([])
+  const [placeholders, setPlaceholders] = useState<string[]>([])
+  const [allAlerts, setAllAlerts] = useState<Alert[]>([])
+  const [briefing, setBriefing] = useState<Briefing | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      const [dashData, alerts, brief] = await Promise.all([
+        fetchDashboardInstitutions(),
+        fetchNetworkAlerts(),
+        fetchNetworkBriefing(),
+      ])
+      setInstitutions(dashData.institutions)
+      setPlaceholders(dashData.placeholders)
+      setAllAlerts(alerts)
+      setBriefing(brief)
+      setLoading(false)
+    }
+    load()
+  }, [])
 
   const scrollToNL = () => nlRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+  // ── aggregates ──
+  const withAcad = institutions.filter((i) => i.current.academique)
+  const avgReussite = withAcad.length > 0
+    ? Math.round(withAcad.reduce((s, i) => s + (i.current.academique?.tauxReussite ?? 0), 0) / withAcad.length)
+    : 0
+  const criticalCount = institutions.filter((i) => i.health === 'critical').length
+  const warningCount  = institutions.filter((i) => i.health === 'warning').length
+  const goodCount     = institutions.filter((i) => i.health === 'good').length
+  const NETWORK_SCORE = institutions.length > 0
+    ? Math.round(institutions.reduce((s, i) => s + i.riskScore, 0) / institutions.length)
+    : 0
+  const ranked = [...institutions].sort((a, b) => a.riskScore - b.riskScore)
+
+  if (loading) {
+    return (
+      <div className="space-y-6 py-6 px-6 max-w-[1400px] mx-auto">
+        <div className="fade-up">
+          <div className="h-8 bg-rule rounded w-1/3 mb-4 animate-pulse" />
+          <div className="h-12 bg-rule rounded w-2/3 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {[1,2,3,4,5].map((i) => (
+            <div key={i} className="rounded-lg border border-rule bg-paper2/50 p-4 animate-pulse">
+              <div className="h-3 bg-rule rounded w-2/3 mb-3" />
+              <div className="h-8 bg-rule rounded w-1/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8 py-6 px-6 max-w-[1400px] mx-auto">
@@ -72,7 +96,7 @@ export default function CentralDashboard() {
             Salle des opérations
           </h1>
           <p className="text-ink3 text-sm mt-1">
-            {mockInstitutions.length + placeholderInstitutions.length} établissements · Données en temps réel
+            {institutions.length + placeholders.length} établissements · Données en temps réel
           </p>
         </div>
         <div className="text-right">
@@ -102,9 +126,11 @@ export default function CentralDashboard() {
       </div>
 
       {/* ── AI Briefing ── */}
-      <div className="fade-up-2">
-        <BriefingCard briefing={mockUCARBriefing} onAskQuestion={scrollToNL} />
-      </div>
+      {briefing && (
+        <div className="fade-up-2">
+          <BriefingCard briefing={briefing} onAskQuestion={scrollToNL} />
+        </div>
+      )}
 
       {/* ── Institutions grid / ranking ── */}
       <div className="fade-up-2">
@@ -138,11 +164,10 @@ export default function CentralDashboard() {
 
         {view === 'grid' ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {mockInstitutions.map((inst) => (
+            {institutions.map((inst) => (
               <InstitutionCard key={inst.id} institution={inst} />
             ))}
-            {/* placeholder institutions */}
-            {placeholderInstitutions.map((name) => (
+            {placeholders.map((name) => (
               <div
                 key={name}
                 className="rounded-lg border border-dashed border-rule bg-paper2/50 px-4 py-3 flex items-center gap-3"
