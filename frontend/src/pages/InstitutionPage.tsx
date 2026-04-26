@@ -49,7 +49,7 @@ export default function InstitutionPage() {
         <div className="text-right">
           <p className="text-xs text-gray-400">Classement réseau</p>
           <p className="text-2xl font-bold text-blue-800">#{ranking}</p>
-          <p className="text-xs text-gray-400">sur 6 établissements suivis</p>
+          <p className="text-xs text-gray-400">sur +30 établissements suivis</p>
         </div>
       </div>
 

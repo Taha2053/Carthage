@@ -12,13 +12,12 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    const ok = await login(email, password)
-    if (!ok) {
+    const result = await login(email, password)
+    if (!result.success) {
       setError('Email ou mot de passe incorrect.')
       return
     }
-    const { redirectPath } = useAuthStore.getState()
-    navigate(redirectPath ?? '/central')
+    navigate(result.redirectPath ?? '/central')
   }
 
   const demo = (em: string) => { setEmail(em); setPassword('demo') }

@@ -91,7 +91,7 @@ export default function HeroSection() {
           <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-ink3 num">
             <span>CarthaVillage · Réseau UCAR</span>
             <span>26 Avril 2026 — Tunis</span>
-            <span>35 Établissements</span>
+            <span>+30 Établissements</span>
           </div>
           <div className="hairline mt-3" />
 
@@ -171,7 +171,7 @@ export default function HeroSection() {
                 </p>
               </div>
               <div className="col-span-5 flex items-end justify-end">
-                <div className="num text-[12px] text-paper/60">35 établissements · ingestion 04h00</div>
+                <div className="num text-[12px] text-paper/60">+30 établissements · ingestion 04h00</div>
               </div>
             </div>
             <div className="px-10 pb-10 grid grid-cols-12 gap-x-6 gap-y-4 relative">
@@ -341,7 +341,7 @@ export default function HeroSection() {
             {[
               ['Portée', '30 000+', 'étudiants sous signal'],
               ['Bilans', '156', 'délivrés à ce jour'],
-              ['Facultés', '35', "à travers l'UCAR"],
+              ['Facultés', '+150', "à travers l'UCAR"],
               ['Latence', '04h00', 'ingestion quotidienne'],
             ].map(([label, value, sub]) => (
               <div key={label}>

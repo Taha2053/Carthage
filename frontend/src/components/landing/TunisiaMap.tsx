@@ -27,7 +27,7 @@ export default function TunisiaMap({ onPinClick, highlightedId }: Props) {
         <div className="text-center mb-12 fade-up">
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold font-medium mb-3">Réseau territorial</p>
           <h2 className="font-display text-[38px] leading-[1.15] tracking-tightish text-ink">
-            32 établissements,<br/>
+            +30 établissements,<br/>
             <span className="gold-shimmer">un seul réseau</span>
           </h2>
           <p className="mt-4 text-[15px] text-ink3 max-w-md mx-auto">
@@ -245,7 +245,7 @@ export default function TunisiaMap({ onPinClick, highlightedId }: Props) {
                   onClick={() => document.getElementById('institutions')?.scrollIntoView({ behavior: 'smooth' })}
                   className="text-[11px] text-gold hover:text-gold-deep font-medium transition-colors"
                 >
-                  Voir les 32 établissements ↓
+                  Voir les +30 établissements ↓
                 </button>
               </div>
             </div>

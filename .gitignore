@@ -94,3 +94,6 @@ dmypy.json
 
 # FastAPI
 .fastapi/
+
+# Downloaded reference site
+ucar_rnu_tn/

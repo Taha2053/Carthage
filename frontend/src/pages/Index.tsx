@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '@/components/Navbar'
-import TunisiaMap from '@/components/landing/TunisiaMap'
+import InstitutionMap from '@/components/landing/InstitutionMap'
 import StatsSection from '@/components/landing/StatsSection'
 import InstitutionGrid from '@/components/landing/InstitutionGrid'
 import OpportunitiesFeed from '@/components/landing/OpportunitiesFeed'
 import FeedbackSection from '@/components/landing/FeedbackSection'
+import { Trophy, Leaf, MapPin } from 'lucide-react'
 
 function ArrowUpRight({ size = 14 }: { size?: number }) {
   return (
@@ -67,7 +68,7 @@ export default function Index() {
           <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-ink3 num">
             <span>CarthaVillage · Réseau UCAR</span>
             <span>26 Avril 2026 — Tunis</span>
-            <span>32 Établissements</span>
+            <span>+30 Établissements</span>
           </div>
           <div className="hairline mt-3" />
 
@@ -79,7 +80,7 @@ export default function Index() {
                 <span className="gold-shimmer">Un réseau d'excellence de{' '}
                 <em className="not-italic" style={{ fontStyle: 'italic' }}>+30</em></span>
                 <br />
-                <span className="gold-shimmer">établissements.</span>
+                <span className="gold-shimmer">établissements académiques.</span>
               </h1>
               <p className="text-ink2 text-[18px] leading-[1.55] max-w-[58ch] mt-8">
                 L'Université de Carthage est le plus vaste réseau universitaire du nord tunisien. Découvrez nos institutions, analysez nos performances en temps réel, et trouvez toutes les opportunités académiques et professionnelles.
@@ -100,33 +101,40 @@ export default function Index() {
               </div>
             </div>
 
-            {/* right — index card */}
+{/* right — index card */}
             <aside className="col-span-12 lg:col-span-4 lg:pl-8 lg:border-l border-rule">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-ink3 mb-4">Indice UCAR Global, 2026</div>
-              <div className="flex items-end gap-4">
-                <span className="font-display text-[88px] leading-none tracking-tighter2 text-ink">84.2</span>
-                <span className="num text-ok text-[13px] pb-3">+1.4</span>
-              </div>
-              <PulseLine score={84} w={280} h={42} animated />
-              <div className="grid grid-cols-3 gap-3 mt-6 text-[12px]">
-                <div>
-                  <div className="text-ink3 mb-1">Excellent</div>
-                  <div className="num text-[18px] text-ok">15</div>
+              {/* Blue Card - Entrepreneurial School */}
+              <div className="bg-sea text-paper rounded-lg p-6 mb-4 border border-sea/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <Trophy className="w-4 h-4 text-paper/50" />
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-paper/50">Classement 2026</span>
                 </div>
-                <div>
-                  <div className="text-ink3 mb-1">Bon / Stable</div>
-                  <div className="num text-[18px] text-ink">14</div>
+                <div className="text-[64px] font-bold leading-none tracking-tighter2">#1</div>
+                <div className="mt-3 text-[18px] text-paper/90 leading-snug font-light">
+                  Première école<br/>entrepreneuriale de Tunisie
                 </div>
-                <div>
-                  <div className="text-ink3 mb-1">En vigilance</div>
-                  <div className="num text-[18px] text-warn">3</div>
+                <div className="mt-6 pt-4 border-t border-paper/15 flex items-center gap-2 text-[11px] text-paper/50">
+                  <MapPin className="w-3 h-3" />
+                  <span>Tunisie</span>
+                  <span className="ml-auto">UCAR 2026</span>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-paper2 border border-rule rounded">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-ink3 mb-1">Info Réseau</div>
-                <p className="font-display text-[18px] leading-snug text-ink">
-                  Nouvelle initiative Hack4UCAR lancée ce semestre avec participation record.
-                </p>
+              
+              {/* Green Card - Green Metrics */}
+              <div className="bg-ok text-paper rounded-lg p-6 border border-ok/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <Leaf className="w-4 h-4 text-paper/50" />
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-paper/50">Métriques Vertes 2025</span>
+                </div>
+                <div className="text-[64px] font-bold leading-none tracking-tighter2">#1</div>
+                <div className="mt-3 text-[18px] text-paper/90 leading-snug font-light">
+                  Première université<br/>en durabilité
+                </div>
+                <div className="mt-6 pt-4 border-t border-paper/15 flex items-center gap-2 text-[11px] text-paper/50">
+                  <MapPin className="w-3 h-3" />
+                  <span>Tunisie</span>
+                  <span className="ml-auto">ESG 2025</span>
+                </div>
               </div>
             </aside>
           </div>
@@ -134,7 +142,7 @@ export default function Index() {
       </section>
 
       {/* ── Landing Sections ── */}
-      <TunisiaMap onPinClick={setHighlightedId} highlightedId={highlightedId} />
+      <InstitutionMap onPinClick={setHighlightedId} highlightedId={highlightedId} />
       <StatsSection />
       <InstitutionGrid highlightedId={highlightedId} />
       <OpportunitiesFeed />

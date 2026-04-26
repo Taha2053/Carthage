@@ -31,7 +31,7 @@ interface AuthState {
   institutionId: string | null
   redirectPath: string | null
   loading: boolean
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ success: boolean; redirectPath?: string }>
   logout: () => Promise<void>
   initSession: () => Promise<void>
 }
@@ -57,14 +57,15 @@ export const useAuthStore = create<AuthState>()(
             const name = meta.name ?? data.user.email ?? email
             const institutionId = meta.institution_id ?? null
             if (role) {
+              const redirectTo = ROLE_REDIRECT[role] ?? '/'
               set({
                 user: name,
                 role,
                 institutionId,
-                redirectPath: ROLE_REDIRECT[role] ?? '/',
+                redirectPath: redirectTo,
                 loading: false,
               })
-              return true
+              return { success: true, redirectPath: redirectTo }
             }
           }
         } catch {
@@ -76,18 +77,19 @@ export const useAuthStore = create<AuthState>()(
           (a) => a.email === email.trim() && a.password === password,
         )
         if (account) {
+          const redirectTo = ROLE_REDIRECT[account.role]
           set({
             user: account.name,
             role: account.role,
             institutionId: account.institutionId,
-            redirectPath: ROLE_REDIRECT[account.role],
+            redirectPath: redirectTo,
             loading: false,
           })
-          return true
+          return { success: true, redirectPath: redirectTo }
         }
 
         set({ loading: false })
-        return false
+        return { success: false }
       },
 
       logout: async () => {
