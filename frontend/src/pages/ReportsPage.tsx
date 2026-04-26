@@ -104,9 +104,32 @@ export default function ReportsPage() {
                 <h3 className="font-display text-2xl text-ink tracking-tighter2">
                   {selectedReport.title ?? selectedReport.report?.title ?? t('reports.report')}
                 </h3>
-                <span className="pill pill-accent">
-                  {selectedReport.status ?? selectedReport.report?.status ?? 'published'}
-                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      const content = selectedReport.markdown_content ?? selectedReport.description ?? '';
+                      const blob = new Blob([content], { type: 'text/markdown' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `Report_${selectedReport.id ?? 'export'}.md`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="text-[11px] font-medium uppercase tracking-widest text-gold border border-gold/30 hover:bg-gold/10 px-3 py-1.5 rounded transition-colors"
+                  >
+                    {t('dashboard.export', 'Exporter')} (.MD)
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="text-[11px] font-medium uppercase tracking-widest text-ink hover:bg-rule px-3 py-1.5 rounded transition-colors"
+                  >
+                    PDF
+                  </button>
+                  <span className="pill pill-accent">
+                    {selectedReport.status ?? selectedReport.report?.status ?? 'published'}
+                  </span>
+                </div>
               </div>
               <div className="glow-line mb-4" />
               <div className="prose prose-sm max-w-none text-ink2 leading-relaxed whitespace-pre-wrap">

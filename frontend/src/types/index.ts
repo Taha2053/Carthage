@@ -7,6 +7,7 @@ export interface KpiAcademique {
   tauxPresence: number
   tauxAbandon: number
   tauxRedoublement: number
+  effectif?: number
 }
 
 export interface KpiInsertion {
@@ -57,6 +58,14 @@ export interface Briefing {
   weekLabel: string
   findings: BriefingFinding[]
   fullText: string
+}
+
+export interface DashboardSummary {
+  networkIndex: number
+  institutions: Institution[]
+  alertsSummary: Alert[]
+  briefing: Briefing
+  rankings?: any[]
 }
 
 export interface Institution {

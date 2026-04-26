@@ -67,6 +67,7 @@ export default function CentralDashboard() {
       text: a.message,
       severity: a.severity,
       institutionId: a.institutionId,
+      domain: 'general',
     })),
     fullText: alertsSummary.map(a => `• ${a.message}`).join('\n'),
   }

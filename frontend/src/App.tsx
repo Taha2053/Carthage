@@ -16,6 +16,14 @@ import OrchestratorPage from './pages/OrchestratorPage'
 import StrategicIntelligencePage from './pages/StrategicIntelligencePage'
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
+import { Toaster } from 'react-hot-toast'
+
+// New CRUD Pages
+import AdminDepartments from './pages/admin/AdminDepartments'
+import AdminStaff from './pages/admin/AdminStaff'
+import AdminStudents from './pages/admin/AdminStudents'
+import TeacherGrades from './pages/teacher/TeacherGrades'
+import TeacherAbsences from './pages/teacher/TeacherAbsences'
 
 export default function App() {
   const initSession = useAuthStore((s) => s.initSession)
@@ -26,6 +34,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <Routes>
         {/* Public — no auth required */}
         <Route path="/" element={<Index />} />
@@ -67,6 +76,50 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin', 'enseignant', 'etudiant']}>
                   <StudentPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ── Admin CRUD ── */}
+            <Route
+              path="/admin/departments"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
+                  <AdminDepartments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/staff"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
+                  <AdminStaff />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/students"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'institution_admin']}>
+                  <AdminStudents />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ── Teacher CRUD ── */}
+            <Route
+              path="/teacher/grades"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'enseignant']}>
+                  <TeacherGrades />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/teacher/absences"
+              element={
+                <ProtectedRoute allowedRoles={['ucar_central', 'enseignant']}>
+                  <TeacherAbsences />
                 </ProtectedRoute>
               }
             />
