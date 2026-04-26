@@ -1,9 +1,8 @@
-import axios from 'axios'
+import api from './api'
 import type { NLQueryAnswer } from '@/types'
 import { nlQueryCache } from '@/mock/data'
 
-const USE_MOCK = true
-const API_BASE = '/api'
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 export const submitNLQuery = async (question: string): Promise<NLQueryAnswer> => {
   if (USE_MOCK) {
@@ -18,5 +17,6 @@ export const submitNLQuery = async (question: string): Promise<NLQueryAnswer> =>
     )
     return found ?? nlQueryCache[0]
   }
-  return axios.post<NLQueryAnswer>(`${API_BASE}/query`, { question }).then((r) => r.data)
+  const { data } = await api.post<NLQueryAnswer>('/query', { question })
+  return data
 }

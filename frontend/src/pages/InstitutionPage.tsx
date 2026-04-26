@@ -1,15 +1,26 @@
+<<<<<<< HEAD
 import { useParams, Navigate, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { getInstitution } from '@/services/institutions'
+=======
+import { useState, useEffect } from 'react'
+import { useParams, Navigate } from 'react-router-dom'
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from 'recharts'
+import { fetchInstitutionDetail } from '@/services/adapters'
+import { healthToBadgeColor, healthToLabel } from '@/utils/health'
+>>>>>>> 7304b0bdbaa5d5bd10bd2f7b6fd43cf60a000fe4
 import { cn } from '@/lib/utils'
 import AlertsPanel from '@/components/alerts/AlertsPanel'
 import BriefingCard from '@/components/pulse/BriefingCard'
 import UploadFlow from '@/components/upload/UploadFlow'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+<<<<<<< HEAD
 import type { Institution } from '@/services/institutions'
 import type { Severity } from '@/types'
 import { ArrowLeft, MapPin, Users, Calendar, ExternalLink } from 'lucide-react'
@@ -38,6 +49,35 @@ export default function InstitutionPage() {
   const navigate = useNavigate()
   const [institution, setInstitution] = useState<Institution | null>(null)
   const [loading, setLoading] = useState(true)
+=======
+import type { Institution } from '@/types'
+
+export default function InstitutionPage() {
+  const { id } = useParams<{ id: string }>()
+  const [institution, setInstitution] = useState<Institution | null | undefined>(undefined)
+
+  useEffect(() => {
+    if (!id) return
+    fetchInstitutionDetail(id).then(setInstitution)
+  }, [id])
+
+  // Loading
+  if (institution === undefined) {
+    return (
+      <div className="space-y-6 py-6 px-6 max-w-[1400px] mx-auto">
+        <div className="h-8 bg-rule rounded w-1/3 animate-pulse" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[1,2,3,4].map((i) => (
+            <div key={i} className="rounded-lg border border-rule bg-paper2/50 p-4 animate-pulse">
+              <div className="h-8 bg-rule rounded w-1/2 mb-2" />
+              <div className="h-3 bg-rule rounded w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+>>>>>>> 7304b0bdbaa5d5bd10bd2f7b6fd43cf60a000fe4
 
   useEffect(() => {
     async function fetchData() {
