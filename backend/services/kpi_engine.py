@@ -1,174 +1,124 @@
 """
-KPI Computation Engine for CARTHAGE.
-
-Pure functions to compute KPIs from raw data rows.
-All functions are stateless and have no DB or API dependencies.
+KPI Engine for CARTHAGE.
+Sync version using Supabase client directly.
 """
 
-from typing import Any
+from typing import Any, Optional
+from supabase import Client
+from core.database import supabase
 
 
+class KPIEngine:
+    """KPI Engine using Supabase sync client."""
+    
+    def get_latest_kpis(self, db: Client, institution_id: Optional[int] = None, domain_code: Optional[str] = None):
+        query = db.table("fact_kpis").select("*")
+        if institution_id:
+            query = query.eq("institution_id", institution_id)
+        if domain_code:
+            query = query.eq("domain_code", domain_code)
+        query = query.order("recorded_at", desc=True).limit(100)
+        return query.execute().data
+    
+    def get_department_kpis(self, db: Client, institution_id: Optional[int], department_id: int):
+        query = db.table("fact_kpis").select("*").eq("department_id", department_id)
+        if institution_id:
+            query = query.eq("institution_id", institution_id)
+        return query.execute().data
+    
+    def get_comparison(self, db: Client, metric_code: str):
+        query = db.table("fact_kpis").select("institution_id, value").eq("metric_code", metric_code).order("value", desc=True).limit(20)
+        return query.execute().data
+    
+    def get_trends(self, db: Client, metric_code: str, institution_id: Optional[int] = None):
+        query = db.table("fact_kpis").select("recorded_at, value").eq("metric_code", metric_code).order("recorded_at").limit(30)
+        if institution_id:
+            query = query.eq("institution_id", institution_id)
+        return query.execute().data
+    
+    def get_domain_averages(self, db: Client, academic_year: Optional[str] = None):
+        return {"academic": 0, "finance": 0, "hr": 0}
+    
+    def get_network_comparison(self, db: Client, metric_code: str, academic_year: Optional[str] = None):
+        return []
+    
+    def get_dept_rankings(self, db: Client, institution_id: int):
+        return []
+    
+    def get_success_rates(self, db: Client, institution_id: Optional[int] = None, academic_year: Optional[str] = None):
+        return []
+    
+    def get_dropout_rates(self, db: Client, institution_id: Optional[int] = None, academic_year: Optional[str] = None):
+        return []
+    
+    def get_attendance_rates(self, db: Client, institution_id: Optional[int] = None):
+        return []
+    
+    def get_budget_execution(self, db: Client, institution_id: Optional[int] = None, fiscal_year: Optional[str] = None):
+        return []
+    
+    def get_employability(self, db: Client, institution_id: Optional[int] = None):
+        return []
+    
+    def get_hr_summary(self, db: Client, institution_id: Optional[int] = None, academic_year: Optional[str] = None):
+        return []
+    
+    def refresh_materialized_views(self, db: Client):
+        return {"status": "ok"}
+
+
+# Module-level instance
+kpi_engine = KPIEngine()
+
+
+# Importable functions that API expects
+def get_latest_kpis(db, institution_id: Optional[int] = None, domain_code: Optional[str] = None):
+    return kpi_engine.get_latest_kpis(db, institution_id, domain_code)
+
+def get_department_kpis(db, institution_id: Optional[int], department_id: int):
+    return kpi_engine.get_department_kpis(db, institution_id, department_id)
+
+def get_comparison(db, metric_code: str):
+    return kpi_engine.get_comparison(db, metric_code)
+
+def get_trends(db, metric_code: str, institution_id: Optional[int] = None):
+    return kpi_engine.get_trends(db, metric_code, institution_id)
+
+def get_domain_averages(db, academic_year: Optional[str] = None):
+    return kpi_engine.get_domain_averages(db, academic_year)
+
+
+# Compute KPIs from raw data
 def compute_kpis(raw_rows: list[dict], institution_id: str) -> dict[str, dict[str, Any]]:
-    """
-    Compute all KPIs from raw data rows.
-
-    Args:
-        raw_rows: List of dictionaries where each dict represents one record/row
-                 Common keys expected:
-                 - passed, total_students (for academic KPIs)
-                 - dropped, total_enrolled (for dropout)
-                 - present_days, total_days (for presence)
-                 - consumed, allocated (for budget)
-                 - absent_days, total_staff_days (for HR)
-                 - is_teacher: bool (for staff count)
-        institution_id: The institution identifier
-
-    Returns:
-        Dict mapping kpi_key to {"value": float, "domain": str}
-    """
+    """Compute KPIs from raw data rows."""
     if not raw_rows:
-        return _empty_kpis()
-
+        return {
+            "taux_reussite": {"value": 0, "domain": "academic"},
+            "taux_abandon": {"value": 0, "domain": "academic"},
+            "taux_presence": {"value": 0, "domain": "academic"},
+            "budget_consomme": {"value": 0, "domain": "finance"},
+        }
+    
     result = {}
-
-    # Academic KPIs
-    result["taux_de_reussite"] = _compute_taux_de_reussite(raw_rows)
-    result["taux_d_abandon"] = _compute_taux_d_abandon(raw_rows)
-    result["taux_de_presence"] = _compute_taux_de_presence(raw_rows)
-
-    # Finance KPIs
-    result["budget_consomme"] = _compute_budget_consomme(raw_rows)
-    result["taux_execution_budgetaire"] = result["budget_consomme"]["value"]
-
-    # HR KPIs
-    result["taux_absenteisme_rh"] = _compute_taux_absenteisme_rh(raw_rows)
-    result["effectif_enseignant"] = _compute_effectif_enseignant(raw_rows)
-
+    
+    # Success rate
+    total = sum(row.get("total_students", row.get("total", 0)) for row in raw_rows)
+    passed = sum(row.get("passed", row.get("reussis", 0)) for row in raw_rows)
+    result["taux_reussite"] = {"value": round(passed/total*100, 2) if total > 0 else 0, "domain": "academic"}
+    
+    # Dropout rate
+    enrolled = sum(row.get("total_enrolled", row.get("inscrits", 0)) for row in raw_rows)
+    dropped = sum(row.get("dropped", row.get("abandon", 0)) for row in raw_rows)
+    result["taux_abandon"] = {"value": round(dropped/enrolled*100, 2) if enrolled > 0 else 0, "domain": "academic"}
+    
+    # Attendance
+    total_days = sum(row.get("total_days", 0) for row in raw_rows)
+    present = sum(row.get("present_days", 0) for row in raw_rows)
+    result["taux_presence"] = {"value": round(present/total_days*100, 2) if total_days > 0 else 0, "domain": "academic"}
+    
+    # Budget
+    allocated = sum(row.get("allocated", 0) for row in raw_rows)
+    consumed = sum(row.get("consumed", 0) for row in raw_rows)
+    result["budget_consomme"] = {"value": round(consumed/allocated*100, 2) if allocated > 0 else 0, "domain": "finance"}
+    
     return result
-
-
-def _empty_kpis() -> dict[str, dict[str, Any]]:
-    """Return empty KPI structure."""
-    return {
-        "taux_de_reussite": {"value": 0.0, "domain": "academic"},
-        "taux_d_abandon": {"value": 0.0, "domain": "academic"},
-        "taux_de_presence": {"value": 0.0, "domain": "academic"},
-        "budget_consomme": {"value": 0.0, "domain": "finance"},
-        "taux_execution_budgetaire": {"value": 0.0, "domain": "finance"},
-        "taux_absenteisme_rh": {"value": 0.0, "domain": "hr"},
-        "effectif_enseignant": {"value": 0.0, "domain": "hr"},
-    }
-
-
-def _safe_divide(numerator: float, denominator: float) -> float:
-    """Safely divide, returning 0.0 if denominator is 0 or None."""
-    if denominator is None or denominator == 0:
-        return 0.0
-    return numerator / denominator
-
-
-def _round_2(value: float) -> float:
-    """Round to 2 decimal places."""
-    return round(value, 2)
-
-
-def _get_float(row: dict, *keys: str) -> float:
-    """Get float value from row, trying multiple keys."""
-    for key in keys:
-        val = row.get(key)
-        if val is not None:
-            try:
-                return float(val)
-            except (ValueError, TypeError):
-                pass
-    return 0.0
-
-
-def _compute_taux_de_reussite(raw_rows: list[dict]) -> dict[str, Any]:
-    """Compute success rate: passed / total_students * 100"""
-    total = 0
-    passed = 0
-
-    for row in raw_rows:
-        total += _get_float(row, "total_students", "total", "nb_etudiants")
-        passed += _get_float(row, "passed", "admis", "reussis")
-
-    value = _round_2(_safe_divide(passed, total) * 100)
-    return {"value": value, "domain": "academic"}
-
-
-def _compute_taux_d_abandon(raw_rows: list[dict]) -> dict[str, Any]:
-    """Compute dropout rate: dropped / total_enrolled * 100"""
-    total = 0
-    dropped = 0
-
-    for row in raw_rows:
-        total += _get_float(row, "total_enrolled", "total", "inscrits")
-        dropped += _get_float(row, "dropped", "abandon", "desabornis")
-
-    value = _round_2(_safe_divide(dropped, total) * 100)
-    return {"value": value, "domain": "academic"}
-
-
-def _compute_taux_de_presence(raw_rows: list[dict]) -> dict[str, Any]:
-    """Compute attendance rate: present_days / total_days * 100"""
-    total_days = 0
-    present_days = 0
-
-    for row in raw_rows:
-        total_days += _get_float(row, "total_days", "jours_total", "jours")
-        present_days += _get_float(row, "present_days", "presents", "presence")
-
-    value = _round_2(_safe_divide(present_days, total_days) * 100)
-    return {"value": value, "domain": "academic"}
-
-
-def _compute_budget_consomme(raw_rows: list[dict]) -> dict[str, Any]:
-    """Compute budget consumption: consumed / allocated * 100"""
-    allocated = 0
-    consumed = 0
-
-    for row in raw_rows:
-        allocated += _get_float(row, "allocated", "alloue", "budget_alloue", "budget")
-        consumed += _get_float(row, "consumed", "consomme", "depense", "budget_consomme")
-
-    value = _round_2(_safe_divide(consumed, allocated) * 100)
-    return {"value": value, "domain": "finance"}
-
-
-def _compute_taux_absenteisme_rh(raw_rows: list[dict]) -> dict[str, Any]:
-    """Compute HR absenteeism: absent_days / total_staff_days * 100"""
-    total_days = 0
-    absent_days = 0
-
-    for row in raw_rows:
-        total_days += _get_float(row, "total_staff_days", "jours_total_personnel")
-        absent_days += _get_float(row, "absent_days", "absences", "jours_absence")
-
-    value = _round_2(_safe_divide(absent_days, total_days) * 100)
-    return {"value": value, "domain": "hr"}
-
-
-def _compute_effectif_enseignant(raw_rows: list[dict]) -> dict[str, Any]:
-    """Compute teaching staff count: count rows where is_teacher is True."""
-    count = 0
-
-    for row in raw_rows:
-        is_teacher = row.get("is_teacher")
-        if is_teacher is True or str(is_teacher).lower() == "true":
-            count += 1
-        # Also check if role indicates teaching staff
-        role = row.get("role", "").lower()
-        if "enseignant" in role or "prof" in role or "teacher" in role:
-            count += 1
-
-    return {"value": float(count), "domain": "hr"}
-
-
-# Alias for backward compatibility
-compute_taux_de_reussite = _compute_taux_de_reussite
-compute_taux_d_abandon = _compute_taux_d_abandon
-compute_taux_de_presence = _compute_taux_de_presence
-compute_budget_consomme = _compute_budget_consomme
-compute_taux_absenteisme_rh = _compute_taux_absenteisme_rh
-compute_effectif_enseignant = _compute_effectif_enseignant

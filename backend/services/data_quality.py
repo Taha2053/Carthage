@@ -9,7 +9,6 @@ from __future__ import annotations
 import logging
 import math
 from typing import Any, Dict, List, Optional
-from supabase._async.client import AsyncClient
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +100,7 @@ class DataQualityService:
         query = db.table("fact_kpis").select(
             "value, metric_id, institution_id, dim_institution(name), dim_metric(code, name, higher_is_better)"
         ).is_("department_id", "null")
-        resp = await query.execute()
+        resp = query.execute()
         rows = resp.data
 
         # Group by metric

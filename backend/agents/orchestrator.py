@@ -16,7 +16,6 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from supabase._async.client import AsyncClient
 
 logger = logging.getLogger(__name__)
 

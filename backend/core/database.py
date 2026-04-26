@@ -3,8 +3,12 @@ from core.config import settings
 
 
 def get_supabase() -> Client:
-    """Create and return Supabase client."""
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 
 supabase: Client = get_supabase()
+
+
+def get_db():
+    """Dependency for FastAPI to inject Supabase client."""
+    return supabase

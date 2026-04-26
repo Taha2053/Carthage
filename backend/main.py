@@ -53,5 +53,7 @@ def health():
 
 # Import and register routers
 from api.ingest import router as ingest_router
+from api.router import api_router
 
 app.include_router(ingest_router)
+app.include_router(api_router)

@@ -4,8 +4,7 @@ import InstitutionCard from '@/components/institutions/InstitutionCard'
 import BriefingCard from '@/components/pulse/BriefingCard'
 import AlertsPanel from '@/components/alerts/AlertsPanel'
 import NLQueryBar from '@/components/query/NLQueryBar'
-import type { Health, Severity, Alert } from '@/types'
-import type { Institution } from '@/services/institutions'
+import type { Health, Severity, Alert, Institution } from '@/types'
 import { Building2, AlertTriangle, CheckCircle, TrendingUp, Download, FileText } from 'lucide-react'
 
 const HEALTH_GLOW: Record<Health, string> = {

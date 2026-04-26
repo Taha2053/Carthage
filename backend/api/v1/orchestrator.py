@@ -8,7 +8,6 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from supabase._async.client import AsyncClient
 
 from core.database import get_db
 from agents.orchestrator import orchestrator
@@ -22,7 +21,7 @@ router = APIRouter(prefix="/orchestrator", tags=["Orchestrator"])
 async def deep_analysis(
     institution_id: int = Query(..., description="Institution to analyse"),
     include_report: bool = Query(False, description="Set true to also generate a full narrative report"),
-    db: AsyncClient = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Run a full AI-native deep analysis on a single institution.
@@ -48,7 +47,7 @@ async def deep_analysis(
 
 
 @router.post("/network-brief")
-async def network_brief(db: AsyncClient = Depends(get_db)):
+async def network_brief(db=Depends(get_db)):
     """
     Generate a cross-institution executive briefing for the Carthage University President.
     
@@ -71,7 +70,7 @@ async def trigger_upload_pipeline(
     institution_id: int = Query(...),
     filename: str = Query(...),
     rows_inserted: int = Query(0),
-    db: AsyncClient = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Manually trigger the post-upload intelligence pipeline for testing.

@@ -9,7 +9,6 @@ import time
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
-from supabase._async.client import AsyncClient
 
 from core.database import get_db
 from schemas.query import NLQueryRequest, NLQueryResponse
@@ -22,7 +21,7 @@ router = APIRouter(prefix="/query", tags=["AI Query"])
 
 
 @router.post("", response_model=NLQueryResponse)
-async def nl_query(body: NLQueryRequest, db: AsyncClient = Depends(get_db)):
+async def nl_query(body: NLQueryRequest, db=Depends(get_db)):
     """
     Hybrid NL query endpoint.
     - Routes numeric/KPI questions → SQL Agent (NL→SQL→Execute)
@@ -64,7 +63,7 @@ async def nl_query(body: NLQueryRequest, db: AsyncClient = Depends(get_db)):
 
     # 3. Log every query for history and analytics
     try:
-        await db.table("nl_query_log").insert({
+        db.table("nl_query_log").insert({
             "raw_query": body.query,
             "institution_id": body.institution_id,
             "generated_sql": generated_sql,
@@ -89,7 +88,7 @@ async def nl_query(body: NLQueryRequest, db: AsyncClient = Depends(get_db)):
 async def query_history(
     limit: int = Query(20, le=100),
     institution_id: Optional[int] = Query(None),
-    db: AsyncClient = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Past NL queries with filters."""
     query = db.table("nl_query_log").select("*")
