@@ -12,12 +12,33 @@ logger = logging.getLogger(__name__)
 
 
 async def on_data_uploaded(event: Dict) -> None:
-    """Handle data_uploaded event → push to WebSocket clients."""
-    logger.info(f"📥 Worker: data_uploaded event received")
-    await manager.broadcast("kpis", {
-        "type": "data_uploaded",
-        "data": event.get("data", {}),
-    })
+    """Handle data_uploaded event → run Orchestrator post-upload pipeline → broadcast results."""
+    logger.info("📥 Worker: data_uploaded event received — routing to Orchestrator")
+
+    event_data = event.get("data", {})
+    institution_id = event_data.get("institution_id")
+
+    if institution_id:
+        try:
+            from core.database import get_supabase
+            from agents.orchestrator import orchestrator
+
+            db = await get_supabase()
+            pipeline_result = await orchestrator.run_post_upload_pipeline(
+                institution_id=institution_id,
+                uploaded_data=event_data,
+                db=db,
+            )
+            await manager.broadcast("kpis", {
+                "type": "data_uploaded",
+                "data": pipeline_result,
+            })
+            logger.info(f"✅ Worker: Orchestrator pipeline complete for institution {institution_id}")
+        except Exception as e:
+            logger.error(f"⚠️ Worker: Orchestrator pipeline failed: {e}")
+            await manager.broadcast("kpis", {"type": "data_uploaded", "data": event_data})
+    else:
+        await manager.broadcast("kpis", {"type": "data_uploaded", "data": event_data})
 
 
 async def on_kpi_updated(event: Dict) -> None:

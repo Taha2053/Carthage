@@ -1331,132 +1331,26 @@ CREATE INDEX ON mv_network_comparison (institution_id, metric_id);
 CREATE INDEX ON mv_network_comparison (metric_code, academic_year);
 
 
--- ============================================================
---  STEP 9 — SEED DATA
--- ============================================================
-
--- ── Domains ──────────────────────────────────────────────────
-INSERT INTO dim_domain (code, name, name_fr, icon, color_hex, display_order) VALUES
-  ('academic',       'Academic',         'Académique',              '🎓', '#4F46E5', 1),
-  ('insertion',      'Employability',    'Insertion Pro.',          '💼', '#0891B2', 2),
-  ('finance',        'Finance',          'Finance',                 '💰', '#059669', 3),
-  ('hr',             'Human Resources',  'Ressources Humaines',     '👥', '#7C3AED', 4),
-  ('research',       'Research',         'Recherche',               '🔬', '#DC2626', 5),
-  ('infrastructure', 'Infrastructure',   'Infrastructure',          '🏗', '#B45309', 6),
-  ('esg',            'ESG / CSR',        'ESG / RSE',               '🌱', '#16A34A', 7),
-  ('partnerships',   'Partnerships',     'Partenariats',            '🤝', '#9333EA', 8),
-  ('student_life',   'Student Life',     'Vie Estudiantine',        '🎭', '#F59E0B', 9),
-  ('training',       'Training',         'Formation Continue',      '📚', '#0EA5E9', 10),
-  ('inventory',      'Inventory',        'Magasin / Inventaire',    '📦', '#84CC16', 11),
-  ('pedagogy',       'Pedagogy',         'Pédagogie',               '📖', '#EC4899', 12);
-
--- ── Metrics ───────────────────────────────────────────────────
-INSERT INTO dim_metric
-    (code, name, name_fr, domain_id, unit, aggregation, higher_is_better,
-     warning_threshold, critical_threshold, is_computed, source_table)
-SELECT m.code, m.name, m.name_fr,
-       d.id, m.unit, m.agg, m.hib, m.warn, m.crit, m.is_comp, m.src_tbl
-FROM (VALUES
-  -- Academic
-  ('success_rate',        'Success Rate',          'Taux de réussite',             'academic',       '%',     'AVG',  true,  60,   40,   true,  'mv_success_rate'),
-  ('attendance_rate',     'Attendance Rate',       'Taux de présence',             'academic',       '%',     'AVG',  true,  70,   50,   true,  'mv_attendance_rate'),
-  ('dropout_rate',        'Dropout Rate',          'Taux d''abandon',              'academic',       '%',     'AVG',  false, 10,   20,   true,  'mv_dropout_rate'),
-  ('repetition_rate',     'Repetition Rate',       'Taux de redoublement',         'academic',       '%',     'AVG',  false, 15,   25,   true,  'mv_dropout_rate'),
-  ('graduation_rate',     'Graduation Rate',       'Taux de diplomation',          'academic',       '%',     'AVG',  true,  70,   50,   true,  'mv_dropout_rate'),
-  ('avg_grade',           'Average Grade',         'Note moyenne',                 'academic',       '/20',   'AVG',  true,  10,   8,    true,  'mv_success_rate'),
-  ('enrolled_students',   'Enrolled Students',     'Étudiants inscrits',           'academic',       'count', 'SUM',  true,  NULL, NULL, false, 'dim_student'),
-  -- Insertion
-  ('employability_rate',  'Employability Rate',    'Taux d''employabilité',        'insertion',      '%',     'AVG',  true,  60,   40,   true,  'mv_employability'),
-  ('days_to_employment',  'Days to Employment',    'Délai d''insertion',           'insertion',      'days',  'AVG',  false, 180,  365,  true,  'mv_employability'),
-  ('national_conv_rate',  'National Convention Rate','Taux convention nationale',  'insertion',      '%',     'AVG',  true,  50,   30,   false, 'dim_partnership'),
-  ('international_conv_rate','Intl Convention Rate','Taux convention intl',        'insertion',      '%',     'AVG',  true,  20,   10,   false, 'dim_partnership'),
-  ('outgoing_mobility',   'Outgoing Mobility',     'Mobilité sortante',            'insertion',      'count', 'SUM',  true,  NULL, NULL, false, 'fact_student_mobility'),
-  -- Finance
-  ('budget_execution_rate','Budget Execution Rate','Taux exécution budgétaire',    'finance',        '%',     'AVG',  true,  70,   50,   true,  'mv_budget_execution'),
-  ('cost_per_student',    'Cost Per Student',      'Coût par étudiant',            'finance',        'TND',   'AVG',  false, NULL, NULL, true,  'fact_budget'),
-  ('budget_allocated',    'Allocated Budget',      'Budget alloué',                'finance',        'TND',   'SUM',  true,  NULL, NULL, false, 'fact_budget'),
-  ('budget_consumed',     'Consumed Budget',       'Budget consommé',              'finance',        'TND',   'SUM',  true,  NULL, NULL, false, 'fact_budget'),
-  -- HR
-  ('teaching_staff_count','Teaching Staff Count',  'Effectif enseignant',          'hr',             'count', 'SUM',  true,  NULL, NULL, true,  'mv_hr_summary'),
-  ('admin_staff_count',   'Admin Staff Count',     'Effectif administratif',       'hr',             'count', 'SUM',  true,  NULL, NULL, true,  'mv_hr_summary'),
-  ('absenteeism_rate',    'Absenteeism Rate',      'Taux d''absentéisme',          'hr',             '%',     'AVG',  false, 5,    10,   true,  'mv_hr_summary'),
-  ('training_hours_staff','Staff Training Hours',  'H. formation personnel',       'hr',             'hours', 'SUM',  true,  NULL, NULL, true,  'mv_hr_summary'),
-  -- Research
-  ('publications_count',  'Publications Count',    'Nb. publications',             'research',       'count', 'SUM',  true,  NULL, NULL, true,  'mv_research_kpis'),
-  ('patents_count',       'Patents Count',         'Nb. brevets',                  'research',       'count', 'SUM',  true,  NULL, NULL, true,  'mv_research_kpis'),
-  ('indexed_pubs_pct',    'Indexed Publications %','% publications indexées',      'research',       '%',     'AVG',  true,  30,   10,   true,  'mv_research_kpis'),
-  ('research_budget',     'Research Budget',       'Budget recherche',             'research',       'TND',   'SUM',  true,  NULL, NULL, false, 'fact_budget'),
-  -- ESG
-  ('energy_kwh',          'Energy Consumption',    'Consommation énergétique',     'esg',            'kWh',   'SUM',  false, NULL, NULL, false, 'fact_esg_metrics'),
-  ('carbon_footprint',    'Carbon Footprint',      'Empreinte carbone',            'esg',            'kg CO₂','SUM',  false, NULL, NULL, false, 'fact_esg_metrics'),
-  ('recycling_rate',      'Recycling Rate',        'Taux de recyclage',            'esg',            '%',     'AVG',  true,  30,   10,   true,  'fact_esg_metrics'),
-  ('renewable_pct',       'Renewable Energy %',    '% énergie renouvelable',       'esg',            '%',     'AVG',  true,  20,   5,    true,  'fact_esg_metrics'),
-  -- Infrastructure
-  ('space_occupancy_rate','Space Occupancy Rate',  'Taux occupation salles',       'infrastructure', '%',     'AVG',  false, 85,   95,   true,  'fact_space_occupancy'),
-  ('equipment_operational_rate','Equipment OK Rate','Taux équipements opérat.',    'infrastructure', '%',     'AVG',  true,  80,   60,   false, 'dim_equipment')
-) AS m(code, name, name_fr, domain_code, unit, agg, hib, warn, crit, is_comp, src_tbl)
-JOIN dim_domain d ON d.code = m.domain_code;
-
--- ── Sample Institutions (UCAR Network) ───────────────────────
-INSERT INTO dim_institution
-    (code, name, short_name, city, region, institution_type, founding_year, student_capacity)
-VALUES
-  ('ENSTAB',  'École Nationale des Sciences et Technologies Avancées de Bizerte',               'ENSTAB',  'Bizerte',        'Bizerte', 'école',    2002, 2000),
-  ('ISITCOM', 'Institut Supérieur de l''Informatique et des Technologies de Communication',     'ISITCOM', 'Hammam Sousse',  'Sousse',  'institut', 1999, 3000),
-  ('ISSATM',  'Institut Supérieur des Sciences Appliquées et de Technologie de Mateur',         'ISSATM',  'Mateur',         'Bizerte', 'ISSAT',    2003, 1500),
-  ('FSEGN',   'Faculté des Sciences Économiques et de Gestion de Nabeul',                       'FSEGN',   'Nabeul',         'Nabeul',  'faculté',  1994, 5000),
-  ('IHE',     'Institut des Hautes Études',                                                     'IHE',     'Carthage',       'Tunis',   'institut', 1985,  800),
-  ('IPSC',    'Institut Préparatoire aux Études Scientifiques de Carthage',                     'IPSC',    'Carthage',       'Tunis',   'prépa',    1990,  600);
-
--- ── Populate dim_time (2020–2030) ────────────────────────────
-INSERT INTO dim_time (
-    full_date, day, day_name, week_number, month, month_name,
-    quarter, semester, academic_year, year, is_weekend
-)
-SELECT
-    d::DATE,
-    EXTRACT(DAY     FROM d)::INT,
-    TO_CHAR(d, 'Day'),
-    EXTRACT(WEEK    FROM d)::INT,
-    EXTRACT(MONTH   FROM d)::INT,
-    TO_CHAR(d, 'Month'),
-    EXTRACT(QUARTER FROM d)::INT,
-    CASE WHEN EXTRACT(MONTH FROM d) BETWEEN 9 AND 12 THEN 1 ELSE 2 END,
-    CASE
-        WHEN EXTRACT(MONTH FROM d) >= 9
-        THEN EXTRACT(YEAR FROM d)::TEXT || '-' || (EXTRACT(YEAR FROM d) + 1)::TEXT
-        ELSE (EXTRACT(YEAR FROM d) - 1)::TEXT || '-' || EXTRACT(YEAR FROM d)::TEXT
-    END,
-    EXTRACT(YEAR FROM d)::INT,
-    EXTRACT(DOW FROM d) IN (0, 6)
-FROM GENERATE_SERIES(
-    '2020-01-01'::DATE,
-    '2030-12-31'::DATE,
-    '1 day'::INTERVAL
-) AS d
-ON CONFLICT (full_date) DO NOTHING;
-
--- Mark exam periods (approximate — adjust per institution calendar)
-UPDATE dim_time SET is_exam_period = TRUE
-WHERE (month = 1 AND day BETWEEN 10 AND 31)
-   OR (month = 6 AND day BETWEEN 1  AND 25)
-   OR (month = 9 AND day BETWEEN 1  AND 15);
 
 
--- ============================================================
---  END OF SCHEMA
---
---  Changes vs original:
---    • mv_hr_summary: removed non-existent hrm.training_hours and
---      hrm.trainings_completed references; replaced with a LEFT JOIN
---      subquery that aggregates fact_training_completion + dim_training_program
---      per (staff_id, academic_year), avoiding fan-out row multiplication.
---      Exposed as total_training_hours / total_trainings_completed — same
---      column names so dependent metric queries need no changes.
---
---  Next steps:
---    1. Run backend workers to populate staging_raw_data
---    2. Schedule REFRESH MATERIALIZED VIEW CONCURRENTLY for all 8 MVs
---    3. Create Supabase Row Level Security policies per role
---    4. Configure event_queue consumer (Redis or pg_cron)
--- ============================================================
+
+CREATE TABLE documents (
+    id              BIGSERIAL PRIMARY KEY,
+    institution_id  INT REFERENCES dim_institution(id),
+
+    title           TEXT,
+    content         TEXT NOT NULL,
+
+    source          TEXT,              -- pdf, report, web, manual, etc.
+    doc_type        VARCHAR(50),       -- policy, report, note, syllabus, etc.
+
+    embedding       vector(1536),      -- OpenAI text-embedding-3-small
+
+    metadata        JSONB DEFAULT '{}',
+
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+
+

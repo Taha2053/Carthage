@@ -38,17 +38,17 @@ async def forecast_risk(
     logger.info(f"[RiskForecaster] Forecasting {kpi_key} for {institution} with {len(history)} points")
 
     prompt = f"""
-    You are a predictive data analyst for a university.
-    Analyze the following historical data points for the KPI '{kpi_key}' at institution '{institution}'.
-    Historical values (oldest to newest): {history}
+    Tu es un analyste de donnǸes prǸdictif pour l'UniversitǸ de Carthage.
+    Analyse les donnǸes historiques suivantes pour l'indicateur '{kpi_key}'   l'institution '{institution}'.
+    Valeurs historiques (de la plus ancienne   la plus rǸcente): {history}
     
-    Project what will happen in the next 4 to 8 weeks if this trend continues.
+    Projette ce qui se passera dans l'annǸe   venir si cette tendance se maintient.
     
-    Return ONLY valid JSON in this exact format:
+    Tu DOIS retourner UNIQUEMENT un objet JSON valide, sans aucun texte ou formatage Markdown autour, avec ce format exact :
     {{
-        "prediction_text": "A clear, professional prediction in French about what will happen if the trend continues.",
-        "weeks_to_event": 6,  // Integer estimation of weeks until a critical threshold is hit (if applicable, else 0)
-        "confidence": 0.85  // Float between 0.0 and 1.0 indicating your confidence in this trend
+        "prediction_text": "Une prǸdiction claire et professionnelle en franais sur ce qui se passera si la tendance continue. Recommande une action.",
+        "weeks_to_event": 6,
+        "confidence": 0.85
     }}
     """
     
@@ -56,12 +56,13 @@ async def forecast_risk(
         response = await call_llm(prompt, temperature=0.1)
         
         # Clean markdown if present
-        if response.startswith("```json"):
-            response = response[7:-3]
-        elif response.startswith("```"):
-            response = response[3:-3]
+        cleaned = response.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:-3].strip()
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:-3].strip()
             
-        decision = json.loads(response.strip())
+        decision = json.loads(cleaned)
         return decision
     except Exception as e:
         logger.error(f"[RiskForecaster] Failed to forecast risk: {e}")

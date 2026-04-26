@@ -92,3 +92,11 @@ class KPIDashboardResponse(BaseModel):
     alerts_summary: Dict[str, int] = {}  # {critical: N, warning: M}
     total_institutions: int = 0
     last_updated: Optional[datetime] = None
+
+
+class KPIOverrideRequest(BaseModel):
+    """Payload for manually overriding a KPI value."""
+    new_value: float
+    reason: str
+    user_id: int
+

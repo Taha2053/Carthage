@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from supabase._async.client import AsyncClient
+from core.events import event_bus
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,18 @@ class IngestionService:
             }
             
             await db.table("upload_log").insert(upload_log).execute()
+            
+            # Trigger background AI and caching workers
+            await event_bus.publish(
+                "data_uploaded",
+                {
+                    "institution_id": institution_id,
+                    "filename": filename,
+                    "domain": domain_code,
+                    "rows_inserted": rows_inserted,
+                    "category": category
+                }
+            )
             
             return {
                 "status": "completed",
@@ -351,6 +364,17 @@ class IngestionService:
         await db.table("upload_log").insert(upload_log).execute()
         
         logger.info(f"✅ Ingestion: {rows_inserted} inserted, quality={quality_score}%")
+        
+        # Trigger background AI and caching workers
+        await event_bus.publish(
+            "data_uploaded",
+            {
+                "institution_id": institution_id,
+                "filename": filename,
+                "domain": domain_code,
+                "rows_inserted": rows_inserted
+            }
+        )
         
         return {
             "status": "completed",
