@@ -22,7 +22,7 @@ export default function UploadFlow() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<ExtractedKPI[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [institutionId] = useState(1)
+  const [institutionId] = useState(10)
 
   const uploadFile = useCallback(async (file: File) => {
     setFile(file)

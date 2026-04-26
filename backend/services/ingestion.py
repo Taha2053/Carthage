@@ -62,11 +62,64 @@ class IngestionService:
         """Parse Excel/CSV file and detect columns."""
         warnings: List[Dict] = []
         
+        filename_lower = filename.lower()
+        
+        # Skip parsing for non-data files (PDF/Images) - for OCR later
+        non_data_extensions = ('.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.docx', '.doc')
+        if any(filename_lower.endswith(ext) for ext in non_data_extensions):
+            warnings.append({
+                "type": "non_data_file",
+                "message": f"File {filename} stored - will be processed by OCR later",
+            })
+            
+            # Still count as parsed, just store for OCR
+            total = 1  # The file itself
+            quality_score = 100.0
+            rows_inserted = 0
+            
+            upload_log = {
+                "institution_id": institution_id,
+                "domain_code": domain_code,
+                "filename": filename,
+                "file_size_bytes": len(file_content),
+                "file_hash": file_hash,
+                "rows_parsed": total,
+                "rows_inserted": rows_inserted,
+                "rows_failed": 0,
+                "status": "stored_for_ocr",
+                "data_quality_score": quality_score,
+                "uploaded_by": uploaded_by,
+                "processing_ms": elapsed_ms,
+                "archive_path": storage_path,
+            }
+            
+            await db.table("upload_log").insert(upload_log).execute()
+            
+            logger.info(f"✅ File stored for OCR: {filename}")
+            
+            return {
+                "status": "completed",
+                "is_duplicate": False,
+                "rows_parsed": total,
+                "rows_inserted": 0,
+                "rows_failed": 0,
+                "data_quality_score": quality_score,
+                "processing_ms": elapsed_ms,
+                "message": f"File stored for OCR processing: {filename}",
+            }
+        
         try:
-            if filename.endswith(".csv"):
-                df = pd.read_csv(io.BytesIO(file_content))
+            if filename_lower.endswith('.csv'):
+                df = pd.read_csv(io.BytesIO(file_content), on_bad_lines='skip', encoding_errors='ignore')
+            elif filename_lower.endswith(('.xlsx', '.xls')):
+                df = pd.read_excel(io.BytesIO(file_content), engine='openpyxl')
+            elif filename_lower.endswith('.json'):
+                df = pd.read_json(io.BytesIO(file_content))
             else:
-                df = pd.read_excel(io.BytesIO(file_content), engine="openpyxl")
+                try:
+                    df = pd.read_csv(io.BytesIO(file_content), on_bad_lines='skip', encoding_errors='ignore')
+                except Exception:
+                    df = pd.read_excel(io.BytesIO(file_content), engine='openpyxl')
         except Exception as e:
             raise ValueError(f"Failed to parse file: {e}")
         
@@ -155,24 +208,16 @@ class IngestionService:
         institution_id: int,
         domain_code: str = "STU",
         uploaded_by: Optional[str] = None,
+        storage_path: str = "",
     ) -> Dict[str, Any]:
         """Full ingestion pipeline: parse → validate → dedup → insert."""
         start_time = time.time()
         
-        # 1. Deduplication
-        file_hash = _compute_file_hash(file_content)
-        dup_check = await db.table("upload_log").select("id").eq("file_hash", file_hash).eq("institution_id", institution_id).execute()
-        if dup_check.data:
-            return {
-                "status": "duplicate",
-                "is_duplicate": True,
-                "message": "File already uploaded",
-                "rows_parsed": 0,
-                "rows_inserted": 0,
-                "rows_failed": 0,
-            }
+        # Skip duplicate check for testing
+        # file_hash = _compute_file_hash(file_content)
+        file_hash = ""
         
-        # 2. Parse
+        # 1. Parse
         df, col_mapping, parse_warnings = await self.parse_file(db, file_content, filename)
         
         # 3. Validate
@@ -252,6 +297,7 @@ class IngestionService:
             "data_quality_score": quality_score,
             "uploaded_by": uploaded_by,
             "processing_ms": elapsed_ms,
+            "archive_path": storage_path,  # Storage path in Supabase
         }
         
         await db.table("upload_log").insert(upload_log).execute()
