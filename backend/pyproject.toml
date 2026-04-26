@@ -1,15 +1,39 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["api*", "core*", "agents*", "models*", "schemas*", "workers*", "services*", "migrations*"]
+
 [project]
-name = "backend"
-version = "0.1.0"
-description = "Add your description here"
+name = "ucar-backend"
+version = "1.0.0"
+description = "UCAR Intelligence Hub - AI-powered university management platform"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
+    "asyncpg>=0.31.0",
     "fastapi>=0.136.1",
+    "httpx>=0.28.1",
+    "jinja2>=3.1.6",
+    "mistralai>=2.4.2",
+    "openai>=2.32.0",
     "openpyxl>=3.1.5",
     "pandas>=3.0.2",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic>=2.13.3",
     "pydantic-settings>=2.14.0",
+    "pypdf>=6.10.2",
+    "python-dotenv>=1.2.2",
+    "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.26",
+    "redis>=7.4.0",
+    "sqlalchemy[asyncio]>=2.0.49",
     "supabase>=2.29.0",
-    "uvicorn>=0.46.0",
+    "uvicorn[standard]>=0.46.0",
 ]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]

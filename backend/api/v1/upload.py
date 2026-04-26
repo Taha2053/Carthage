@@ -9,6 +9,7 @@ import logging
 import uuid
 from typing import Optional
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, Form
+from supabase._async.client import AsyncClient
 from core.database import get_db, get_supabase
 from core.config import settings
 from schemas.upload import UploadResponse, UploadValidationResult
@@ -101,7 +102,7 @@ async def upload_file(
     
     db = await get_supabase()
     
-    inst_check = db.table("dim_institution").select("id").eq("id", institution_id).execute()
+    inst_check = await db.table("dim_institution").select("id").eq("id", institution_id).execute()
     if not inst_check.data:
         raise HTTPException(status_code=404, detail="Institution not found")
     
@@ -196,7 +197,7 @@ async def upload_history(
 async def upload_details(upload_id: int):
     """Get upload details."""
     db = await get_supabase()
-    result = db.table("upload_log").select("*").eq("id", upload_id).execute()
+    result = await db.table("upload_log").select("*").eq("id", upload_id).execute()
     
     if not result.data:
         raise HTTPException(status_code=404, detail="Upload not found")

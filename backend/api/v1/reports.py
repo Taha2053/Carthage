@@ -5,6 +5,7 @@ API v1 — Reports CRUD
 from __future__ import annotations
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from supabase._async.client import AsyncClient
 from core.database import get_db
 from schemas.report import ReportCreate, ReportResponse, ReportUpdate
 
@@ -16,7 +17,7 @@ async def list_reports(
     institution_id: Optional[int] = Query(None),
     report_type: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
-    db=Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     query = db.table("reports").select("*")
     if institution_id is not None:
@@ -27,21 +28,21 @@ async def list_reports(
         query = query.eq("status", status)
     query = query.order("created_at", desc=True)
     
-    response = query.execute()
+    response = await query.execute()
     return response.data
 
 
 @router.get("/{report_id}", response_model=ReportResponse)
-async def get_report(report_id: int, db=Depends(get_db)):
-    response = db.table("reports").select("*").eq("id", report_id).execute()
+async def get_report(report_id: int, db: AsyncClient = Depends(get_db)):
+    response = await db.table("reports").select("*").eq("id", report_id).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="Report not found")
     return response.data[0]
 
 
 @router.post("", response_model=ReportResponse, status_code=201)
-async def create_report(data: ReportCreate, db=Depends(get_db)):
-    response = db.table("reports").insert(data.model_dump(exclude_unset=True)).execute()
+async def create_report(data: ReportCreate, db: AsyncClient = Depends(get_db)):
+    response = await db.table("reports").insert(data.model_dump(exclude_unset=True)).execute()
     if not response.data:
         raise HTTPException(status_code=400, detail="Could not create report")
     return response.data[0]
@@ -51,30 +52,30 @@ async def create_report(data: ReportCreate, db=Depends(get_db)):
 async def update_report(
     report_id: int,
     data: ReportUpdate,
-    db=Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     update_data = data.model_dump(exclude_unset=True)
     if not update_data:
         return await get_report(report_id, db)
         
-    response = db.table("reports").update(update_data).eq("id", report_id).execute()
+    response = await db.table("reports").update(update_data).eq("id", report_id).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="Report not found")
     return response.data[0]
 
 
 @router.post("/{report_id}/download")
-async def register_download(report_id: int, db=Depends(get_db)):
+async def register_download(report_id: int, db: AsyncClient = Depends(get_db)):
     """Increment the download count for a report."""
     # First get current
-    resp = db.table("reports").select("download_count").eq("id", report_id).execute()
+    resp = await db.table("reports").select("download_count").eq("id", report_id).execute()
     if not resp.data:
         raise HTTPException(status_code=404, detail="Report not found")
     
     current_count = resp.data[0].get("download_count", 0) or 0
     
     # Then update
-    update_resp = db.table("reports").update({"download_count": current_count + 1}).eq("id", report_id).execute()
+    update_resp = await db.table("reports").update({"download_count": current_count + 1}).eq("id", report_id).execute()
     return {"message": "Download registered", "download_count": update_resp.data[0].get("download_count")}
 
 
@@ -82,20 +83,20 @@ async def register_download(report_id: int, db=Depends(get_db)):
 async def generate_ai_report(
     institution_id: int, 
     period: str = Query(..., description="e.g. 2024-2025 Semester 1"),
-    db=Depends(get_db)
+    db: AsyncClient = Depends(get_db)
 ):
     """Trigger the AI Report Writer to generate a comprehensive markdown report."""
     from agents.report_writer import write_report
     
     # 1. Fetch institution name
-    inst_resp = db.table("dim_institution").select("name, code").eq("id", institution_id).execute()
+    inst_resp = await db.table("dim_institution").select("name, code").eq("id", institution_id).execute()
     if not inst_resp.data:
         raise HTTPException(status_code=404, detail="Institution not found")
     institution_name = inst_resp.data[0]["name"]
     
     # 2. Fetch all KPIs for this institution to give context to the AI
     # In a real app, you'd filter by the specific time_id matching the period
-    kpi_resp = db.table("fact_kpis").select("value, dim_metric(code, name)").eq("institution_id", institution_id).limit(50).execute()
+    kpi_resp = await db.table("fact_kpis").select("value, dim_metric(code, name)").eq("institution_id", institution_id).limit(50).execute()
     
     all_kpis = {}
     for row in kpi_resp.data:
@@ -121,7 +122,7 @@ async def generate_ai_report(
         "description": report_content[:200] + "..." # Snippet
     }
     
-    insert_resp = db.table("reports").insert(new_report).execute()
+    insert_resp = await db.table("reports").insert(new_report).execute()
     
     if not insert_resp.data:
         raise HTTPException(status_code=500, detail="Failed to save generated report")

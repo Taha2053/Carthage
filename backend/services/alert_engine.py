@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from supabase._async.client import AsyncClient
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ class AlertEngine:
             query = query.eq("is_resolved", resolved)
 
         query = query.order("created_at", desc=True).limit(limit)
-        response = query.execute()
+        response = await query.execute()
 
         alerts = []
         for row in response.data:

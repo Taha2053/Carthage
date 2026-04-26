@@ -86,6 +86,15 @@ export interface NLQueryAnswer {
   chartData?: { label: string; value: number }[]
 }
 
+export interface NLQueryResponse {
+  query: string
+  answer: string
+  data?: Array<Record<string, unknown>>
+  generated_sql?: string
+  execution_ms?: number
+  was_successful: boolean
+}
+
 export interface StudentProfile {
   name: string
   matricule: string

@@ -8,6 +8,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from supabase._async.client import AsyncClient
 
 from core.database import get_db
 from services.document_ingestion import ingest_document
@@ -22,7 +23,7 @@ async def upload_document(
     institution_id: Optional[int] = Query(None),
     doc_type: str = Query("report", description="E.g. report, policy, regulation, thesis"),
     title: Optional[str] = Query(None),
-    db=Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     """
     Upload a PDF or text document into the RAG knowledge base.
@@ -63,7 +64,7 @@ async def list_documents(
     institution_id: Optional[int] = Query(None),
     doc_type: Optional[str] = Query(None),
     limit: int = Query(50, le=200),
-    db=Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     """List all documents in the knowledge base."""
     query = db.table("documents").select("id, title, source, doc_type, institution_id, created_at")
@@ -72,23 +73,23 @@ async def list_documents(
     if doc_type:
         query = query.eq("doc_type", doc_type)
     query = query.order("created_at", desc=True).limit(limit)
-    result = query.execute()
+    result = await query.execute()
     return result.data
 
 
 @router.get("/{document_id}")
-async def get_document(document_id: int, db=Depends(get_db)):
+async def get_document(document_id: int, db: AsyncClient = Depends(get_db)):
     """Get a single document by ID."""
-    result = db.table("documents").select("id, title, content, source, doc_type, institution_id, metadata, created_at").eq("id", document_id).execute()
+    result = await db.table("documents").select("id, title, content, source, doc_type, institution_id, metadata, created_at").eq("id", document_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Document not found")
     return result.data[0]
 
 
 @router.delete("/{document_id}")
-async def delete_document(document_id: int, db=Depends(get_db)):
+async def delete_document(document_id: int, db: AsyncClient = Depends(get_db)):
     """Remove a document from the knowledge base."""
-    result = db.table("documents").delete().eq("id", document_id).execute()
+    result = await db.table("documents").delete().eq("id", document_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Document not found")
     return {"status": "deleted", "id": document_id}

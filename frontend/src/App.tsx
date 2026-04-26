@@ -15,6 +15,7 @@ import AlertsPage from './pages/AlertsPage'
 import OrchestratorPage from './pages/OrchestratorPage'
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
+import ChatWidget from './components/chat/ChatWidget'
 
 export default function App() {
   const initSession = useAuthStore((s) => s.initSession)
@@ -124,6 +125,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ChatWidget />
     </BrowserRouter>
   )
 }

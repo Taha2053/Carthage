@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
+from supabase._async.client import AsyncClient
 
 from core.llm import call_llm, get_embedding
 

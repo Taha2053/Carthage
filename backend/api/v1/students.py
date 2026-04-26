@@ -4,6 +4,7 @@ API v1 — Students CRUD
 from __future__ import annotations
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from supabase._async.client import AsyncClient
 from core.database import get_db
 from schemas.student import StudentCreate, StudentResponse, StudentSummary, StudentUpdate
 
@@ -19,7 +20,7 @@ async def list_students(
     level: Optional[str] = Query(None),
     limit: int = Query(100, le=500),
     offset: int = Query(0),
-    db=Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     """List students with filters."""
     query = db.table("dim_student").select("*")
@@ -35,7 +36,7 @@ async def list_students(
         query = query.eq("level", level)
     query = query.order("last_name").order("first_name").range(offset, offset + limit - 1)
     
-    response = query.execute()
+    response = await query.execute()
     return response.data
 
 
@@ -43,7 +44,7 @@ async def list_students(
 async def student_summary(
     institution_id: int = Query(...),
     academic_year: Optional[str] = Query(None),
-    db=Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     """Aggregated student statistics for an institution."""
     base_query = db.table("dim_student").select("id", count="exact").eq("institution_id", institution_id)
@@ -81,16 +82,16 @@ async def student_summary(
 
 
 @router.get("/{student_id}", response_model=StudentResponse)
-async def get_student(student_id: int, db=Depends(get_db)):
-    response = db.table("dim_student").select("*").eq("id", student_id).execute()
+async def get_student(student_id: int, db: AsyncClient = Depends(get_db)):
+    response = await db.table("dim_student").select("*").eq("id", student_id).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="Student not found")
     return response.data[0]
 
 
 @router.post("", response_model=StudentResponse, status_code=201)
-async def create_student(data: StudentCreate, db=Depends(get_db)):
-    response = db.table("dim_student").insert(data.model_dump(exclude_unset=True)).execute()
+async def create_student(data: StudentCreate, db: AsyncClient = Depends(get_db)):
+    response = await db.table("dim_student").insert(data.model_dump(exclude_unset=True)).execute()
     if not response.data:
         raise HTTPException(status_code=400, detail="Could not create student")
     return response.data[0]
@@ -98,13 +99,13 @@ async def create_student(data: StudentCreate, db=Depends(get_db)):
 
 @router.patch("/{student_id}", response_model=StudentResponse)
 async def update_student(
-    student_id: int, data: StudentUpdate, db=Depends(get_db)
+    student_id: int, data: StudentUpdate, db: AsyncClient = Depends(get_db)
 ):
     update_data = data.model_dump(exclude_unset=True)
     if not update_data:
         return await get_student(student_id, db)
         
-    response = db.table("dim_student").update(update_data).eq("id", student_id).execute()
+    response = await db.table("dim_student").update(update_data).eq("id", student_id).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="Student not found")
     return response.data[0]

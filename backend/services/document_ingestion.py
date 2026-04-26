@@ -9,6 +9,7 @@ import io
 import logging
 from typing import Any, Dict, List, Optional
 
+from supabase._async.client import AsyncClient
 
 from core.llm import chunk_text, get_embedding
 
