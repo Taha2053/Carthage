@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { UCAR_INSTITUTIONS, TYPE_COLOR } from '@/data/institutions'
 import type { PublicInstitution } from '@/data/institutions'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   onPinClick?: (id: string) => void
@@ -17,6 +18,7 @@ interface Signal {
 }
 
 export default function InstitutionMap({ onPinClick, highlightedId }: Props) {
+  const { t } = useTranslation()
   const [hovered, setHovered] = useState<string | null>(null)
   const [selected, setSelected] = useState<PublicInstitution | null>(null)
   const [signals, setSignals] = useState<Signal[]>([])
@@ -153,7 +155,7 @@ export default function InstitutionMap({ onPinClick, highlightedId }: Props) {
   const colors = ['#60A5FA', '#34D399', '#A78BFA', '#FBBF24', '#F472B6', '#22D3EE', '#4ADE80', '#FB923C', '#818CF8', '#2DD4BF']
 
   return (
-    <section className="relative w-full py-12 overflow-hidden" style={{ background: 'linear-gradient(180deg, #061c38 0%, #0c4a6e 35%, #0c4a6e 65%, #061c38 100%)' }}>
+    <section id="map" className="relative w-full py-12 overflow-hidden" style={{ background: 'linear-gradient(180deg, #061c38 0%, #0c4a6e 35%, #0c4a6e 65%, #061c38 100%)' }}>
       <div className="absolute inset-0" style={{ opacity: 0.6, background: 'linear-gradient(180deg, #061c38 0%, transparent 20%, transparent 80%, #061c38 100%)' }}>
         <svg className="w-full h-full">
           <defs>
@@ -181,8 +183,8 @@ export default function InstitutionMap({ onPinClick, highlightedId }: Props) {
 
       <div className="relative max-w-4xl mx-auto px-4">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-amber-100">Université de Carthage</h2>
-          <p className="text-amber-400/60 text-xs mt-1">Réseau en temps réel · {institutions.length} nœuds</p>
+          <h2 className="text-xl font-bold text-amber-100">{t('landing.universityName')}</h2>
+          <p className="text-amber-400/60 text-xs mt-1">{t('landing.network')} · {institutions.length}</p>
         </div>
 
         <div className="relative h-[300px]">
@@ -371,11 +373,11 @@ export default function InstitutionMap({ onPinClick, highlightedId }: Props) {
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-blue-500"/>
-          <span>Facultés</span>
+          <span>{t('landing.faculties')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-500"/>
-          <span>Écoles</span>
+          <span>{t('landing.schools')}</span>
         </div>
       </div>
     </section>

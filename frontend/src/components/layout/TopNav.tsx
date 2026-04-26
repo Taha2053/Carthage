@@ -3,43 +3,44 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import type { Role } from '@/types'
 import { UCAR_INSTITUTIONS } from '@/data/institutions'
+import { useTranslation } from 'react-i18next'
 
-interface NavItem { label: string; href: string }
+interface NavItem { labelKey: string; href: string }
 
 const NAV_BY_ROLE: Record<Role | 'public', NavItem[]> = {
   public: [
-    { label: 'Accueil',       href: '/' },
-    { label: 'À propos',      href: '/#about' },
+    { labelKey: 'nav.home',       href: '/' },
+    { labelKey: 'nav.about',      href: '/#about' },
   ],
   ucar_central: [
-    { label: 'Accueil',       href: '/' },
-    { label: 'Tableau de bord', href: '/central' },
-    { label: 'Classement',    href: '/rankings' },
-    { label: 'Alertes',       href: '/alerts' },
-    { label: 'Rapports IA',   href: '/reports' },
-    { label: 'Prévisions',    href: '/forecasts' },
-    { label: 'Téléversement', href: '/upload' },
-    { label: 'Orchestrateur', href: '/orchestrator' },
+    { labelKey: 'nav.home',       href: '/' },
+    { labelKey: 'nav.dashboard',  href: '/central' },
+    { labelKey: 'nav.rankings',   href: '/rankings' },
+    { labelKey: 'nav.alerts',     href: '/alerts' },
+    { labelKey: 'nav.reports',    href: '/reports' },
+    { labelKey: 'nav.forecasts',  href: '/forecasts' },
+    { labelKey: 'nav.upload',     href: '/upload' },
+    { labelKey: 'nav.orchestrator', href: '/orchestrator' },
   ],
   institution_admin: [
-    { label: 'Accueil',       href: '/' },
-    { label: 'Tableau de bord', href: '/institution/placeholder' },
-    { label: 'Classement',    href: '/rankings' },
-    { label: 'Alertes',       href: '/alerts' },
-    { label: 'Rapports IA',   href: '/reports' },
-    { label: 'Prévisions',    href: '/forecasts' },
-    { label: 'Téléversement', href: '/upload' },
+    { labelKey: 'nav.home',       href: '/' },
+    { labelKey: 'nav.dashboard',  href: '/institution/placeholder' },
+    { labelKey: 'nav.rankings',   href: '/rankings' },
+    { labelKey: 'nav.alerts',     href: '/alerts' },
+    { labelKey: 'nav.reports',    href: '/reports' },
+    { labelKey: 'nav.forecasts',  href: '/forecasts' },
+    { labelKey: 'nav.upload',     href: '/upload' },
   ],
   enseignant: [
-    { label: 'Accueil',       href: '/' },
-    { label: 'Cours',         href: '/teacher' },
-    { label: 'Documents',     href: '/teacher?tab=documents' },
-    { label: 'Contacts',      href: '/teacher?tab=contacts' },
+    { labelKey: 'nav.home',       href: '/' },
+    { labelKey: 'nav.courses',    href: '/teacher' },
+    { labelKey: 'nav.documents',  href: '/teacher?tab=documents' },
+    { labelKey: 'nav.contacts',   href: '/teacher?tab=contacts' },
   ],
   etudiant: [
-    { label: 'Accueil',       href: '/' },
-    { label: 'Mon dossier',   href: '/student' },
-    { label: 'Mes cours',     href: '/student' },
+    { labelKey: 'nav.home',       href: '/' },
+    { labelKey: 'nav.myRecord',   href: '/student' },
+    { labelKey: 'nav.myCourses',  href: '/student' },
   ],
 }
 
@@ -61,7 +62,26 @@ function UCARIcon() {
   )
 }
 
+function LangToggle() {
+  const { i18n } = useTranslation()
+  const isEn = i18n.language === 'en'
+  const toggle = () => i18n.changeLanguage(isEn ? 'fr' : 'en')
+
+  return (
+    <button
+      onClick={toggle}
+      className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full border border-white/15 text-white/60 hover:text-white/90 hover:border-white/30 transition-colors"
+      title={isEn ? 'Passer en français' : 'Switch to English'}
+    >
+      <span className={isEn ? 'opacity-50' : 'opacity-100'}>FR</span>
+      <span className="opacity-30">|</span>
+      <span className={isEn ? 'opacity-100' : 'opacity-50'}>EN</span>
+    </button>
+  )
+}
+
 export function TopNav() {
+  const { t } = useTranslation()
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { user, role, institutionId, logout } = useAuthStore()
@@ -81,7 +101,6 @@ export function TopNav() {
 
   const handleNavigation = (item: NavItem) => {
     if (item.href.includes('/institution/')) {
-      // Navigate to institution dashboard using stored institutionId
       const targetId = institutionId || item.href.split('/institution/')[1]
       if (targetId && targetId !== 'placeholder') {
         navigate(`/institution/${targetId}`)
@@ -129,7 +148,7 @@ export function TopNav() {
                 CarthaVillage
               </p>
               <p className="text-[9px] uppercase tracking-[0.18em] text-white/40 num leading-none mt-0.5">
-                Université de Carthage
+                {t('nav.universityOf')}
               </p>
             </div>
           </Link>
@@ -138,7 +157,7 @@ export function TopNav() {
           <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
             {links.map((item) => (
               <button
-                key={item.label}
+                key={item.labelKey}
                 onClick={() => handleNavigation(item)}
                 className={`relative px-3 py-1.5 text-[12.5px] rounded-md transition-colors ${
                   isActive(item.href)
@@ -146,7 +165,7 @@ export function TopNav() {
                     : 'text-white/60 hover:text-white/90 hover:bg-white/5'
                 }`}
               >
-                {item.label}
+                {t(item.labelKey)}
                 {isActive(item.href) && (
                   <span
                     className="absolute left-3 right-3 -bottom-[1px] h-[2px] rounded-full"
@@ -157,8 +176,10 @@ export function TopNav() {
             ))}
           </nav>
 
-          {/* Right: search + auth */}
+          {/* Right: lang + search + auth */}
           <div className="flex items-center gap-2.5 shrink-0 ml-auto">
+
+            <LangToggle />
 
             {/* Search button */}
             <button
@@ -168,7 +189,7 @@ export function TopNav() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
               </svg>
-              <span>Rechercher</span>
+              <span>{t('nav.search')}</span>
             </button>
 
             {/* Auth */}
@@ -183,7 +204,7 @@ export function TopNav() {
                   <button
                     onClick={async () => { await logout(); navigate('/') }}
                     className="text-[11px] text-white/40 hover:text-white/70 transition-colors ml-1"
-                    title="Déconnexion"
+                    title={t('nav.logout')}
                   >
                     ×
                   </button>
@@ -194,7 +215,7 @@ export function TopNav() {
                 to="/login"
                 className="text-[12px] px-4 py-1.5 rounded-full border border-gold/40 text-gold hover:bg-gold/10 transition-colors"
               >
-                Se connecter
+                {t('nav.login')}
               </Link>
             )}
           </div>
@@ -218,7 +239,7 @@ export function TopNav() {
                 ref={inputRef}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Rechercher un établissement, une ville..."
+                placeholder={t('nav.searchPlaceholderShort')}
                 className="flex-1 text-[14px] text-white bg-transparent focus:outline-none placeholder:text-white/30"
               />
               <button
@@ -258,11 +279,11 @@ export function TopNav() {
               </div>
             ) : query.length >= 2 ? (
               <div className="px-4 py-8 text-center text-[13px] text-white/40">
-                Aucun établissement trouvé pour "{query}"
+                {t('nav.noResults')} "{query}"
               </div>
             ) : (
               <div className="px-4 py-5">
-                <p className="text-[11px] uppercase tracking-widest text-white/30 font-medium mb-3">Accès rapide</p>
+                <p className="text-[11px] uppercase tracking-widest text-white/30 font-medium mb-3">{t('nav.quickAccess')}</p>
                 <div className="flex flex-wrap gap-2">
                   {['INSAT', "SUP'COM", 'EPT', 'IHEC', 'INAT', 'FSB'].map(name => (
                     <button

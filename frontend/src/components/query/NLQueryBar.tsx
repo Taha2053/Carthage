@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { useTranslation } from 'react-i18next'
 
 const COLORS = ['#1B4F72', '#C5933A', '#5DADE2', '#7B3F8E', '#1E8449', '#F7D98B']
 
@@ -18,6 +19,7 @@ interface QueryResult {
 }
 
 const NLQueryBar = forwardRef<HTMLDivElement>((_, ref) => {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [answer, setAnswer] = useState<QueryResult | null>(null)
@@ -39,21 +41,21 @@ const NLQueryBar = forwardRef<HTMLDivElement>((_, ref) => {
         body: JSON.stringify({ query: query.trim() }),
       })
       
-      if (!response.ok) throw new Error('Erreur de connexion')
+      if (!response.ok) throw new Error(t('query.connectionError'))
       
       const data = await response.json()
       setAnswer(data)
     } catch (err) {
-      setError('Erreur lors de la requête. Veuillez réessayer.')
+      setError(t('query.queryError'))
     } finally {
       setLoading(false)
     }
   }
 
   const quickQuestions = [
-    'Quels sont les établissements en alerte?',
-    'Quel est le taux de réussite moyen?',
-    'Donne-moi le top 5 des institutions',
+    t('query.q1'),
+    t('query.q2'),
+    t('query.q3'),
   ]
 
   return (
@@ -63,7 +65,7 @@ const NLQueryBar = forwardRef<HTMLDivElement>((_, ref) => {
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Posez une question sur vos données..."
+          placeholder={t('query.placeholder')}
           className="flex-1 bg-paper2 border-rule text-ink placeholder:text-ink3"
           disabled={loading}
         />
@@ -126,11 +128,11 @@ const NLQueryBar = forwardRef<HTMLDivElement>((_, ref) => {
                 )}
                 
                 <div className="flex items-center justify-between text-[10px] text-ink3 pt-2 border-t border-rule">
-                  <span>Réponse en {answer.execution_ms}ms</span>
+                  <span>{t('query.responseTime')} {answer.execution_ms}ms</span>
                   {answer.was_successful ? (
-                    <span className="text-ok">✓ Succès</span>
+                    <span className="text-ok">{t('query.success')}</span>
                   ) : (
-                    <span className="text-warn">⚠ Limité</span>
+                    <span className="text-warn">{t('query.limited')}</span>
                   )}
                 </div>
               </CardContent>
