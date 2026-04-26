@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Info, XCircle } from 'lucide-react'
 import type { Alert } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   alerts: Alert[]
@@ -20,17 +21,19 @@ const severityBg = (severity: Alert['severity']) => {
   return 'border-l-2 border-gray-200 bg-gray-50'
 }
 
-export default function AlertsPanel({ alerts, title = 'Alertes actives' }: Props) {
+export default function AlertsPanel({ alerts, title }: Props) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
+  const displayTitle = title ?? t('alerts.activeAlerts')
 
   if (alerts.length === 0) {
     return (
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <CardTitle className="text-sm font-medium">{displayTitle}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-400 text-center py-4">Aucune alerte active</p>
+          <p className="text-sm text-gray-400 text-center py-4">{t('alerts.noActiveAlertsShort')}</p>
         </CardContent>
       </Card>
     )
@@ -40,9 +43,9 @@ export default function AlertsPanel({ alerts, title = 'Alertes actives' }: Props
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium flex items-center justify-between">
-          {title}
+          {displayTitle}
           <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-600 font-semibold">
-            {alerts.filter((a) => a.severity === 'critical').length} critiques
+            {alerts.filter((a) => a.severity === 'critical').length} {t('alerts.criticalCount')}
           </span>
         </CardTitle>
       </CardHeader>

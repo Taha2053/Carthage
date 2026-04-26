@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { UCAR_INSTITUTIONS } from '@/data/institutions'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   variant?: 'light' | 'dark'
@@ -27,7 +28,30 @@ function UCARIcon({ dark = false }) {
   )
 }
 
+function LangToggle({ isDark }: { isDark: boolean }) {
+  const { i18n } = useTranslation()
+  const isEn = i18n.language === 'en'
+  const toggle = () => i18n.changeLanguage(isEn ? 'fr' : 'en')
+
+  return (
+    <button
+      onClick={toggle}
+      className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full border transition-colors ${
+        isDark
+          ? 'border-white/15 text-white/60 hover:text-white/90 hover:border-white/30'
+          : 'border-rule text-ink3 hover:text-ink hover:border-ink3/40'
+      }`}
+      title={isEn ? 'Passer en français' : 'Switch to English'}
+    >
+      <span className={isEn ? 'opacity-50' : 'opacity-100'}>FR</span>
+      <span className="opacity-30">|</span>
+      <span className={isEn ? 'opacity-100' : 'opacity-50'}>EN</span>
+    </button>
+  )
+}
+
 export default function Navbar({ variant = 'light' }: Props) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, role } = useAuthStore()
   const [searchOpen, setSearchOpen] = useState(false)
@@ -68,12 +92,11 @@ export default function Navbar({ variant = 'light' }: Props) {
   }, [])
 
   const navLinks = [
-    { label: 'Accueil',      href: '/' },
-    { label: 'Présentation', href: '/#about' },
-    { label: 'Carte',        href: '/#map' },
-    { label: 'Institutions', href: '/#institutions' },
-    { label: 'Opportunités', href: '/#opportunities' },
-    { label: 'Feedback',     href: '/#feedback' },
+    { label: t('nav.home'),          href: '/' },
+    { label: t('nav.map'),           href: '/#map' },
+    { label: t('nav.institutions'),  href: '/#institutions' },
+    { label: t('nav.opportunities'), href: '/#opportunities' },
+    { label: t('nav.feedback'),      href: '/#feedback' },
   ]
 
   const navStyle = isDark
@@ -93,7 +116,7 @@ export default function Navbar({ variant = 'light' }: Props) {
                 CarthaVillage
               </p>
               <p className={`text-[9px] uppercase tracking-[0.18em] num leading-none mt-0.5 ${isDark ? 'text-white/40' : 'text-ink3'}`}>
-                Université de Carthage
+                {t('nav.universityOf')}
               </p>
             </div>
           </Link>
@@ -111,8 +134,10 @@ export default function Navbar({ variant = 'light' }: Props) {
             ))}
           </nav>
 
-          {/* Right: search + auth */}
+          {/* Right: lang + search + auth */}
           <div className="flex items-center gap-2.5 shrink-0 ml-auto">
+
+            <LangToggle isDark={isDark} />
 
             {/* Search button */}
             <button
@@ -126,7 +151,7 @@ export default function Navbar({ variant = 'light' }: Props) {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
               </svg>
-              <span>Rechercher</span>
+              <span>{t('nav.search')}</span>
               <kbd className={`text-[9px] px-1 py-0.5 rounded border ${isDark ? 'border-white/15 text-white/30' : 'border-rule text-ink3/50'}`}>⌘K</kbd>
             </button>
 
@@ -137,7 +162,7 @@ export default function Navbar({ variant = 'light' }: Props) {
                 className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full transition-all"
                 style={{ background: 'linear-gradient(135deg,#C5933A,#9E7520)', color: '#F4EBD5' }}
               >
-                Tableau de bord
+                {t('nav.dashboard')}
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M7 17L17 7M9 7h8v8"/>
                 </svg>
@@ -151,7 +176,7 @@ export default function Navbar({ variant = 'light' }: Props) {
                     : 'border-gold/60 text-gold hover:bg-gold/8 bg-white/40'
                 }`}
               >
-                Se connecter
+                {t('nav.login')}
               </Link>
             )}
           </div>
@@ -175,7 +200,7 @@ export default function Navbar({ variant = 'light' }: Props) {
                 ref={inputRef}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Rechercher un établissement, une ville, une spécialité…"
+                placeholder={t('nav.searchPlaceholder')}
                 className="flex-1 text-[14px] text-ink bg-transparent focus:outline-none placeholder:text-ink3"
               />
               <button
@@ -215,11 +240,11 @@ export default function Navbar({ variant = 'light' }: Props) {
               </div>
             ) : query.length >= 2 ? (
               <div className="px-4 py-8 text-center text-[13px] text-ink3">
-                Aucun établissement trouvé pour «{query}»
+                {t('nav.noResults')} «{query}»
               </div>
             ) : (
               <div className="px-4 py-5">
-                <p className="text-[11px] uppercase tracking-widest text-ink3 font-medium mb-3">Accès rapide</p>
+                <p className="text-[11px] uppercase tracking-widest text-ink3 font-medium mb-3">{t('nav.quickAccess')}</p>
                 <div className="flex flex-wrap gap-2">
                   {['INSAT', "SUP'COM", 'EPT', 'IHEC', 'INAT', 'FSB'].map(name => (
                     <button

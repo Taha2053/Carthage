@@ -1,5 +1,7 @@
 import api from './api'
 import type { Institution, KpiSnapshot, Alert, Health } from '@/types'
+export type { Institution }
+import { mockInstitutions } from '@/mock/data'
 import { fetchInstitutionKPIs, fetchInstitutionAlerts } from './adapters'
 
 async function getInstitutionKPIs(institutionId: number) {

@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     # ── App ──────────────────────────────────────────────────
     APP_NAME: str = "UCAR Intelligence Hub"
     APP_VERSION: str = "1.0.0"
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+    MISTRAL_API_KEY: str = ""
+    APP_NAME: str = "CARTHAGE"
     DEBUG: bool = False
 
     # ── Database (Supabase PostgreSQL) ───────────────────────

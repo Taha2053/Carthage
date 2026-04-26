@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react'
 import { getNetworkRankings } from '@/services/kpis'
-
-const METRIC_OPTIONS = [
-  { code: '', label: 'Tous les KPIs' },
-  { code: 'SUCCESS_RATE', label: 'Taux de réussite' },
-  { code: 'DROPOUT_RATE', label: "Taux d'abandon" },
-  { code: 'ATTENDANCE_RATE', label: 'Taux de présence' },
-  { code: 'BUDGET_EXEC', label: 'Exécution budgétaire' },
-  { code: 'EMPLOYABILITY', label: 'Employabilité' },
-  { code: 'ABSENTEEISM', label: 'Absentéisme RH' },
-]
+import { useTranslation } from 'react-i18next'
 
 export default function RankingsPage() {
+  const { t } = useTranslation()
   const [rankings, setRankings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [metricFilter, setMetricFilter] = useState('')
   const [yearFilter, setYearFilter] = useState('')
+
+  const METRIC_OPTIONS = [
+    { code: '', label: t('rankings.allKpis') },
+    { code: 'SUCCESS_RATE', label: t('rankings.successRate') },
+    { code: 'DROPOUT_RATE', label: t('rankings.dropoutRate') },
+    { code: 'ATTENDANCE_RATE', label: t('rankings.attendanceRate') },
+    { code: 'BUDGET_EXEC', label: t('rankings.budgetExec') },
+    { code: 'EMPLOYABILITY', label: t('rankings.employability') },
+    { code: 'ABSENTEEISM', label: t('rankings.hrAbsenteeism') },
+  ]
 
   useEffect(() => {
     setLoading(true)
@@ -30,13 +32,13 @@ export default function RankingsPage() {
       {/* Header */}
       <div className="fade-up">
         <p className="text-[11px] uppercase tracking-[0.18em] text-ink3 num mb-1">
-          Classement réseau · mv_network_comparison
+          {t('rankings.subtitle')}
         </p>
         <h1 className="font-display text-4xl gold-shimmer tracking-tighter2">
-          Classement des établissements
+          {t('rankings.title')}
         </h1>
         <p className="text-ink3 text-sm mt-1">
-          Comparaison en temps réel de toutes les institutions du réseau UCAR.
+          {t('rankings.description')}
         </p>
       </div>
 
@@ -45,7 +47,7 @@ export default function RankingsPage() {
       {/* Filters */}
       <div className="flex items-center gap-4 flex-wrap fade-up-1">
         <div>
-          <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1.5">Indicateur</label>
+          <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1.5">{t('rankings.indicator')}</label>
           <select
             value={metricFilter}
             onChange={(e) => setMetricFilter(e.target.value)}
@@ -57,20 +59,20 @@ export default function RankingsPage() {
           </select>
         </div>
         <div>
-          <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1.5">Année académique</label>
+          <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1.5">{t('rankings.academicYear')}</label>
           <select
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
             className="rounded-lg border border-rule bg-paper px-4 py-2.5 text-sm text-ink focus:border-gold focus:outline-none transition-colors"
           >
-            <option value="">Toutes</option>
+            <option value="">{t('rankings.all')}</option>
             <option value="2024-2025">2024-2025</option>
             <option value="2023-2024">2023-2024</option>
             <option value="2022-2023">2022-2023</option>
           </select>
         </div>
         <div className="ml-auto text-right">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-1">Résultats</p>
+          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-1">{t('rankings.results')}</p>
           <p className="font-display text-3xl tracking-tighter2 text-ink">{rankings.length}</p>
         </div>
       </div>
@@ -91,11 +93,11 @@ export default function RankingsPage() {
               <thead className="bg-paper2 border-b border-rule">
                 <tr>
                   <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3 num w-14">#</th>
-                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Établissement</th>
-                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Indicateur</th>
-                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">Valeur</th>
-                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">Moy. réseau</th>
-                  <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.1em] text-ink3">Performance</th>
+                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">{t('rankings.establishment')}</th>
+                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">{t('rankings.indicator')}</th>
+                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">{t('rankings.value')}</th>
+                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">{t('rankings.networkAvg')}</th>
+                  <th className="px-4 py-3 text-center text-[11px] uppercase tracking-[0.1em] text-ink3">{t('rankings.performance')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -134,7 +136,7 @@ export default function RankingsPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-rule bg-paper2/30 p-8 text-center">
-            <p className="text-ink3 text-sm">Aucune donnée de classement disponible.</p>
+            <p className="text-ink3 text-sm">{t('rankings.noRankingData')}</p>
           </div>
         )}
       </div>
