@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertTriangle, Sparkles } from 'lucide-react'
 import type { StudentProfile } from '@/types'
+import { useTranslation } from 'react-i18next'
 
 export default function StudentPage() {
+  const { t } = useTranslation()
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -37,13 +39,13 @@ export default function StudentPage() {
   const { name, filiere, annee, tauxPresence, moyenne, credits, creditsTotal, progression, nudge, courses } = profile
 
   const progressionColor = progression === 'critical' ? 'text-red-600' : progression === 'at_risk' ? 'text-amber-600' : 'text-emerald-600'
-  const progressionLabel = progression === 'critical' ? 'Situation critique' : progression === 'at_risk' ? 'À surveiller' : 'Sur la bonne voie'
+  const progressionLabel = progression === 'critical' ? t('student.criticalSituation') : progression === 'at_risk' ? t('student.toWatch') : t('student.onTrack')
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Mon parcours</h1>
-        <p className="text-sm text-gray-500 mt-1">{name} · {filiere} · Année {annee}</p>
+        <h1 className="text-xl font-bold text-gray-900">{t('student.myPath')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{name} · {filiere} · {t('student.year')} {annee}</p>
       </div>
 
       <motion.div
@@ -53,7 +55,7 @@ export default function StudentPage() {
       >
         <Sparkles className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
         <div>
-          <p className="text-xs font-semibold text-blue-700 mb-1">Conseil personnalisé CarthaVillage</p>
+          <p className="text-xs font-semibold text-blue-700 mb-1">{t('student.personalAdvice')}</p>
           <p className="text-sm text-gray-700 leading-relaxed">{nudge}</p>
         </div>
       </motion.div>
@@ -64,7 +66,7 @@ export default function StudentPage() {
             <p className={cn('text-2xl font-bold', tauxPresence < 70 ? 'text-red-600' : tauxPresence < 80 ? 'text-amber-600' : 'text-emerald-600')}>
               {tauxPresence}%
             </p>
-            <p className="text-xs text-gray-500 mt-1">Présence globale</p>
+            <p className="text-xs text-gray-500 mt-1">{t('student.globalPresence')}</p>
           </CardContent>
         </Card>
         <Card>
@@ -72,19 +74,19 @@ export default function StudentPage() {
             <p className={cn('text-2xl font-bold', moyenne < 10 ? 'text-red-600' : moyenne < 12 ? 'text-amber-600' : 'text-emerald-600')}>
               {moyenne.toFixed(1)}
             </p>
-            <p className="text-xs text-gray-500 mt-1">Moyenne générale</p>
+            <p className="text-xs text-gray-500 mt-1">{t('student.generalAverage')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
             <p className="text-2xl font-bold text-gray-900">{credits}<span className="text-sm text-gray-400">/{creditsTotal}</span></p>
-            <p className="text-xs text-gray-500 mt-1">Crédits validés</p>
+            <p className="text-xs text-gray-500 mt-1">{t('student.validatedCredits')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
             <p className={cn('text-lg font-bold', progressionColor)}>{progressionLabel}</p>
-            <p className="text-xs text-gray-500 mt-1">Progression</p>
+            <p className="text-xs text-gray-500 mt-1">{t('student.progression')}</p>
           </CardContent>
         </Card>
       </div>
@@ -93,9 +95,9 @@ export default function StudentPage() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-amber-800">Taux de présence insuffisant</p>
+            <p className="text-sm font-medium text-amber-800">{t('student.insufficientPresence')}</p>
             <p className="text-xs text-amber-600 mt-0.5">
-              Votre taux de présence est en dessous du seuil requis (75%). Des absences supplémentaires peuvent entraîner une exclusion des examens.
+              {t('student.presenceWarning')}
             </p>
           </div>
         </div>
@@ -103,15 +105,15 @@ export default function StudentPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Résultats par matière</CardTitle>
+          <CardTitle className="text-sm">{t('student.resultsBySubject')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Matière</TableHead>
-                <TableHead>Note /20</TableHead>
-                <TableHead>Présence</TableHead>
+                <TableHead>{t('student.subject')}</TableHead>
+                <TableHead>{t('student.grade')}</TableHead>
+                <TableHead>{t('student.presence')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

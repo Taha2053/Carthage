@@ -6,22 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertTriangle, XCircle } from 'lucide-react'
 import type { TeacherProfile } from '@/types'
-
-const riskBadge = (risk: 'none' | 'at_risk' | 'critical') => {
-  if (risk === 'critical') return (
-    <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700 font-medium">
-      <XCircle className="h-3 w-3" />En danger
-    </span>
-  )
-  if (risk === 'at_risk') return (
-    <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 font-medium">
-      <AlertTriangle className="h-3 w-3" />À risque
-    </span>
-  )
-  return <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-600">Normal</span>
-}
+import { useTranslation } from 'react-i18next'
 
 export default function TeacherPage() {
+  const { t } = useTranslation()
   const [profile, setProfile] = useState<TeacherProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -31,6 +19,20 @@ export default function TeacherPage() {
       setLoading(false)
     })
   }, [])
+
+  const riskBadge = (risk: 'none' | 'at_risk' | 'critical') => {
+    if (risk === 'critical') return (
+      <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700 font-medium">
+        <XCircle className="h-3 w-3" />{t('teacher.inDanger')}
+      </span>
+    )
+    if (risk === 'at_risk') return (
+      <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 font-medium">
+        <AlertTriangle className="h-3 w-3" />{t('teacher.atRisk')}
+      </span>
+    )
+    return <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-600">{t('teacher.normal')}</span>
+  }
 
   if (loading || !profile) {
     return (
@@ -54,7 +56,7 @@ export default function TeacherPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Mes cours</h1>
+        <h1 className="text-xl font-bold text-gray-900">{t('teacher.myCourses')}</h1>
         <p className="text-sm text-gray-500 mt-1">{name} · FSEGT</p>
       </div>
 
@@ -63,10 +65,10 @@ export default function TeacherPage() {
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-amber-800">
-              {atRiskCount} étudiant{atRiskCount > 1 ? 's' : ''} nécessite{atRiskCount > 1 ? 'nt' : ''} un suivi
+              {atRiskCount} {t('teacher.studentsNeedFollowUp')}
             </p>
             <p className="text-xs text-amber-600 mt-0.5">
-              Taux de présence bas ou moyenne insuffisante. Un accompagnement pédagogique est recommandé.
+              {t('teacher.followUpAdvice')}
             </p>
           </div>
         </div>
@@ -96,7 +98,7 @@ export default function TeacherPage() {
                   <Card>
                     <CardContent className="pt-4 pb-3 text-center">
                       <p className="text-2xl font-bold text-gray-900">{course.students.length}</p>
-                      <p className="text-xs text-gray-500">Étudiants</p>
+                      <p className="text-xs text-gray-500">{t('teacher.studentsLabel')}</p>
                     </CardContent>
                   </Card>
                   <Card>
@@ -104,7 +106,7 @@ export default function TeacherPage() {
                       <p className={cn('text-2xl font-bold', avgPresence < 70 ? 'text-red-600' : avgPresence < 80 ? 'text-amber-600' : 'text-emerald-600')}>
                         {avgPresence}%
                       </p>
-                      <p className="text-xs text-gray-500">Présence moy.</p>
+                      <p className="text-xs text-gray-500">{t('teacher.avgPresence')}</p>
                     </CardContent>
                   </Card>
                   <Card>
@@ -112,7 +114,7 @@ export default function TeacherPage() {
                       <p className={cn('text-2xl font-bold', Number(avgMoyenne) < 10 ? 'text-red-600' : 'text-gray-900')}>
                         {avgMoyenne}
                       </p>
-                      <p className="text-xs text-gray-500">Moyenne /20</p>
+                      <p className="text-xs text-gray-500">{t('teacher.avgGrade')}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -125,10 +127,10 @@ export default function TeacherPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Étudiant</TableHead>
-                          <TableHead>Présence</TableHead>
-                          <TableHead>Moyenne</TableHead>
-                          <TableHead>Statut</TableHead>
+                          <TableHead>{t('teacher.studentCol')}</TableHead>
+                          <TableHead>{t('teacher.presenceCol')}</TableHead>
+                          <TableHead>{t('teacher.gradeCol')}</TableHead>
+                          <TableHead>{t('teacher.statusCol')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

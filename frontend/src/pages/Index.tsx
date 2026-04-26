@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '@/components/Navbar'
 import InstitutionMap from '@/components/landing/InstitutionMap'
@@ -7,6 +7,7 @@ import InstitutionGrid from '@/components/landing/InstitutionGrid'
 import OpportunitiesFeed from '@/components/landing/OpportunitiesFeed'
 import FeedbackSection from '@/components/landing/FeedbackSection'
 import { Trophy, Leaf, MapPin } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 function ArrowUpRight({ size = 14 }: { size?: number }) {
   return (
@@ -55,6 +56,7 @@ function PulseLine({ score, w = 120, h = 28, animated = false }: { score: number
 }
 
 export default function Index() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
 
@@ -66,37 +68,37 @@ export default function Index() {
       <section className="relative carthage-bg on-dark">
         <div className="max-w-[1400px] mx-auto px-8 pt-14 pb-10">
           <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-ink3 num">
-            <span>CarthaVillage · Réseau UCAR</span>
-            <span>26 Avril 2026 — Tunis</span>
-            <span>+30 Établissements</span>
+            <span>{t('landing.network')}</span>
+            <span>{t('landing.date')}</span>
+            <span>{t('landing.establishments')}</span>
           </div>
           <div className="hairline mt-3" />
 
           <div className="grid grid-cols-12 gap-8 mt-12 mb-10">
             {/* left — headline */}
             <div className="col-span-12 lg:col-span-8">
-              <Pill>Portail universitaire</Pill>
+              <Pill>{t('landing.pill')}</Pill>
               <h1 className="font-display font-medium text-[72px] md:text-[96px] leading-[0.88] tracking-tighter2 mt-6 fade-up-1">
-                <span className="gold-shimmer">Un réseau d'excellence de{' '}
+                <span className="gold-shimmer">{t('landing.headline1')}{' '}
                 <em className="not-italic" style={{ fontStyle: 'italic' }}>+30</em></span>
                 <br />
-                <span className="gold-shimmer">établissements académiques.</span>
+                <span className="gold-shimmer">{t('landing.headline2')}</span>
               </h1>
               <p className="text-ink2 text-[18px] leading-[1.55] max-w-[58ch] mt-8">
-                L'Université de Carthage est le plus vaste réseau universitaire du nord tunisien. Découvrez nos institutions, analysez nos performances en temps réel, et trouvez toutes les opportunités académiques et professionnelles.
+                {t('landing.description')}
               </p>
               <div className="flex items-center gap-3 mt-10">
                 <button
                   onClick={() => document.getElementById('map')?.scrollIntoView({ behavior: 'smooth' })}
                   className="btn-primary inline-flex items-center gap-2 pl-5 pr-1.5 py-1.5 rounded-full text-[14px]"
                 >
-                  Explorer la carte
+                  {t('landing.exploreMap')}
                   <span className="arr inline-flex items-center justify-center w-9 h-9 rounded-full">
                     <ArrowUpRight size={14} />
                   </span>
                 </button>
                 <button onClick={() => navigate('/login')} className="text-[14px] text-ink2 hover:text-ink ul-link ml-4">
-                  Accès privé (Login)
+                  {t('landing.privateAccess')}
                 </button>
               </div>
             </div>
@@ -107,15 +109,15 @@ export default function Index() {
               <div className="bg-sea text-paper rounded-lg p-6 mb-4 border border-sea/20">
                 <div className="flex items-center gap-2 mb-4">
                   <Trophy className="w-4 h-4 text-paper/50" />
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-paper/50">Classement 2026</span>
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-paper/50">{t('landing.ranking2026')}</span>
                 </div>
-                <div className="text-[64px] font-bold leading-none tracking-tighter2">#1</div>
+                <div className="text-[64px] font-bold leading-none tracking-tighter2"># 1</div>
                 <div className="mt-3 text-[18px] text-paper/90 leading-snug font-light">
-                  Première école<br/>entrepreneuriale de Tunisie
+                  {t('landing.firstSchool')}<br/>{t('landing.entrepreneurial')}
                 </div>
                 <div className="mt-6 pt-4 border-t border-paper/15 flex items-center gap-2 text-[11px] text-paper/50">
                   <MapPin className="w-3 h-3" />
-                  <span>Tunisie</span>
+                  <span>{t('landing.tunisia')}</span>
                   <span className="ml-auto">UCAR 2026</span>
                 </div>
               </div>
@@ -124,15 +126,15 @@ export default function Index() {
               <div className="bg-ok text-paper rounded-lg p-6 border border-ok/20">
                 <div className="flex items-center gap-2 mb-4">
                   <Leaf className="w-4 h-4 text-paper/50" />
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-paper/50">Métriques Vertes 2025</span>
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-paper/50">{t('landing.greenMetrics')}</span>
                 </div>
-                <div className="text-[64px] font-bold leading-none tracking-tighter2">#1</div>
+                <div className="text-[64px] font-bold leading-none tracking-tighter2"># 1</div>
                 <div className="mt-3 text-[18px] text-paper/90 leading-snug font-light">
-                  Première université<br/>en durabilité
+                  {t('landing.firstUniversity')}<br/>{t('landing.sustainability')}
                 </div>
                 <div className="mt-6 pt-4 border-t border-paper/15 flex items-center gap-2 text-[11px] text-paper/50">
                   <MapPin className="w-3 h-3" />
-                  <span>Tunisie</span>
+                  <span>{t('landing.tunisia')}</span>
                   <span className="ml-auto">ESG 2025</span>
                 </div>
               </div>
@@ -156,46 +158,46 @@ export default function Index() {
               <span className="font-display text-[28px] font-semibold tracking-tighter2 leading-none text-ink">CarthaVillage</span>
             </div>
             <p className="text-ink3 mt-3 leading-relaxed max-w-[34ch]">
-              Le portail interactif de l'Université de Carthage. Une vision claire et unifiée sur trente-deux institutions académiques rayonnant sur toute la région du nord.
+              {t('landing.footerDesc')}
             </p>
           </div>
           <div className="col-span-6 md:col-span-2">
-            <div className="text-ink3 text-[11px] uppercase tracking-[0.18em] mb-3">Navigation</div>
+            <div className="text-ink3 text-[11px] uppercase tracking-[0.18em] mb-3">{t('landing.navigation')}</div>
             <ul className="space-y-2 text-ink2">
-              <li><a href="#map" className="hover:text-gold">Carte Interactive</a></li>
-              <li><a href="#institutions" className="hover:text-gold">Institutions</a></li>
-              <li><a href="#opportunities" className="hover:text-gold">Opportunités</a></li>
-              <li><a href="#feedback" className="hover:text-gold">Feedback</a></li>
+              <li><a href="#map" className="hover:text-gold">{t('landing.interactiveMap')}</a></li>
+              <li><a href="#institutions" className="hover:text-gold">{t('nav.institutions')}</a></li>
+              <li><a href="#opportunities" className="hover:text-gold">{t('nav.opportunities')}</a></li>
+              <li><a href="#feedback" className="hover:text-gold">{t('nav.feedback')}</a></li>
             </ul>
           </div>
           <div className="col-span-6 md:col-span-2">
-            <div className="text-ink3 text-[11px] uppercase tracking-[0.18em] mb-3">Accès Privé</div>
+            <div className="text-ink3 text-[11px] uppercase tracking-[0.18em] mb-3">{t('landing.privateAccessTitle')}</div>
             <ul className="space-y-2 text-ink2">
-              <li><button onClick={() => navigate('/login')} className="hover:text-gold">Étudiant</button></li>
-              <li><button onClick={() => navigate('/login')} className="hover:text-gold">Enseignant</button></li>
-              <li><button onClick={() => navigate('/login')} className="hover:text-gold">Administration</button></li>
-              <li><button onClick={() => navigate('/login')} className="hover:text-gold">UCAR Central</button></li>
+              <li><button onClick={() => navigate('/login')} className="hover:text-gold">{t('landing.studentRole')}</button></li>
+              <li><button onClick={() => navigate('/login')} className="hover:text-gold">{t('landing.teacherRole')}</button></li>
+              <li><button onClick={() => navigate('/login')} className="hover:text-gold">{t('landing.administration')}</button></li>
+              <li><button onClick={() => navigate('/login')} className="hover:text-gold">{t('landing.ucarCentral')}</button></li>
             </ul>
           </div>
           <div className="col-span-6 md:col-span-2">
-            <div className="text-ink3 text-[11px] uppercase tracking-[0.18em] mb-3">Légal</div>
+            <div className="text-ink3 text-[11px] uppercase tracking-[0.18em] mb-3">{t('landing.legal')}</div>
             <ul className="space-y-2 text-ink2">
-              <li>Confidentialité</li>
-              <li>Conditions d'utilisation</li>
-              <li>Mentions légales</li>
+              <li>{t('landing.privacy')}</li>
+              <li>{t('landing.terms')}</li>
+              <li>{t('landing.legalNotice')}</li>
             </ul>
           </div>
           <div className="col-span-6 md:col-span-2">
-            <div className="text-ink3 text-[11px] uppercase tracking-[0.18em] mb-3">Contact</div>
+            <div className="text-ink3 text-[11px] uppercase tracking-[0.18em] mb-3">{t('landing.contact')}</div>
             <ul className="space-y-2 text-ink2">
-              <li>Université de Carthage</li>
+              <li>{t('landing.universityName')}</li>
               <li>info@carthage.tn</li>
               <li>+216 71 000 000</li>
             </ul>
           </div>
           <div className="col-span-12 flex items-center justify-between border-t border-rule pt-6 text-ink3">
-            <span className="num">© 2026 CarthaVillage · Université de Carthage</span>
-            <span className="num">HACK4UCAR 2025</span>
+            <span className="num">{t('landing.copyright')}</span>
+            <span className="num">{t('landing.hackathon')}</span>
           </div>
         </div>
       </footer>

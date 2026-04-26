@@ -4,7 +4,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { fetchInstitutionDetail } from '@/services/adapters'
-import { healthToBadgeColor, healthToLabel } from '@/utils/health'
+import { healthToBadgeColor, healthToLabelKey } from '@/utils/health'
 import { cn } from '@/lib/utils'
 import AlertsPanel from '@/components/alerts/AlertsPanel'
 import BriefingCard from '@/components/pulse/BriefingCard'
@@ -12,8 +12,10 @@ import UploadFlow from '@/components/upload/UploadFlow'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Institution } from '@/types'
+import { useTranslation } from 'react-i18next'
 
 export default function InstitutionPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const [institution, setInstitution] = useState<Institution | null | undefined>(undefined)
 
@@ -22,7 +24,6 @@ export default function InstitutionPage() {
     fetchInstitutionDetail(id).then(setInstitution)
   }, [id])
 
-  // Loading
   if (institution === undefined) {
     return (
       <div className="space-y-6 py-6 px-6 max-w-[1400px] mx-auto">
@@ -52,10 +53,10 @@ export default function InstitutionPage() {
   }))
 
   const kpiCards = [
-    { label: 'Taux de réussite', value: `${current.academique?.tauxReussite}%`, domain: 'Académique' },
-    { label: "Taux d'abandon", value: `${current.academique?.tauxAbandon}%`, domain: 'Académique' },
-    { label: "Taux d'employabilité", value: `${current.insertion?.tauxEmployabilite}%`, domain: 'Insertion' },
-    { label: 'Exécution budgétaire', value: `${current.finance?.tauxExecution}%`, domain: 'Finance' },
+    { label: t('institution.successRate'), value: `${current.academique?.tauxReussite}%`, domain: t('institution.academic') },
+    { label: t('institution.dropoutRate'), value: `${current.academique?.tauxAbandon}%`, domain: t('institution.academic') },
+    { label: t('institution.employabilityRate'), value: `${current.insertion?.tauxEmployabilite}%`, domain: t('institution.insertion') },
+    { label: t('institution.budgetExecution'), value: `${current.finance?.tauxExecution}%`, domain: t('institution.finance') },
   ]
 
   return (
@@ -65,15 +66,15 @@ export default function InstitutionPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-gray-900">{name}</h1>
             <span className={cn('rounded-full border px-2.5 py-0.5 text-xs font-semibold', healthToBadgeColor(health))}>
-              {healthToLabel(health)}
+              {t(healthToLabelKey(health))}
             </span>
           </div>
           <p className="text-sm text-gray-500 mt-1">{fullName}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-gray-400">Classement réseau</p>
+          <p className="text-xs text-gray-400">{t('institution.networkRanking')}</p>
           <p className="text-2xl font-bold text-blue-800">#{ranking}</p>
-          <p className="text-xs text-gray-400">sur 6 établissements suivis</p>
+          <p className="text-xs text-gray-400">{t('institution.outOfEstablishments')}</p>
         </div>
       </div>
 
@@ -93,16 +94,16 @@ export default function InstitutionPage() {
 
       <Tabs defaultValue="academique">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="academique">Académique</TabsTrigger>
-          <TabsTrigger value="insertion">Insertion</TabsTrigger>
-          <TabsTrigger value="finance">Finance</TabsTrigger>
-          <TabsTrigger value="upload">Soumettre</TabsTrigger>
+          <TabsTrigger value="academique">{t('institution.academic')}</TabsTrigger>
+          <TabsTrigger value="insertion">{t('institution.insertion')}</TabsTrigger>
+          <TabsTrigger value="finance">{t('institution.finance')}</TabsTrigger>
+          <TabsTrigger value="upload">{t('institution.submit')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="academique" className="mt-4 space-y-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Taux de réussite — 12 derniers mois</CardTitle>
+              <CardTitle className="text-sm">{t('institution.successRateLast12')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -110,7 +111,7 @@ export default function InstitutionPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} domain={[50, 100]} />
-                  <Tooltip formatter={(v: number) => [`${v}%`, 'Réussite']} />
+                  <Tooltip formatter={(v: number) => [`${v}%`, t('institution.success')]} />
                   <Line type="monotone" dataKey="reussite" stroke="#1D4ED8" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -119,7 +120,7 @@ export default function InstitutionPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Taux d'abandon — 12 derniers mois</CardTitle>
+              <CardTitle className="text-sm">{t('institution.dropoutRateLast12')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={180}>
@@ -127,7 +128,7 @@ export default function InstitutionPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number) => [`${v}%`, 'Abandon']} />
+                  <Tooltip formatter={(v: number) => [`${v}%`, t('institution.dropout')]} />
                   <Bar dataKey="abandon" fill="#EF4444" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -138,7 +139,7 @@ export default function InstitutionPage() {
         <TabsContent value="insertion" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Taux d'employabilité — 12 derniers mois</CardTitle>
+              <CardTitle className="text-sm">{t('institution.employabilityLast12')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -146,7 +147,7 @@ export default function InstitutionPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} domain={[40, 100]} />
-                  <Tooltip formatter={(v: number) => [`${v}%`, 'Employabilité']} />
+                  <Tooltip formatter={(v: number) => [`${v}%`, t('institution.employability')]} />
                   <Line type="monotone" dataKey="employabilite" stroke="#10B981" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -157,7 +158,7 @@ export default function InstitutionPage() {
         <TabsContent value="finance" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Exécution budgétaire — 12 derniers mois</CardTitle>
+              <CardTitle className="text-sm">{t('institution.budgetExecutionLast12')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -165,7 +166,7 @@ export default function InstitutionPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
-                  <Tooltip formatter={(v: number) => [`${v}%`, 'Exécution']} />
+                  <Tooltip formatter={(v: number) => [`${v}%`, t('institution.execution')]} />
                   <Bar dataKey="execution" fill="#F59E0B" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -176,7 +177,7 @@ export default function InstitutionPage() {
         <TabsContent value="upload" className="mt-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Soumettre les données mensuelles</CardTitle>
+              <CardTitle className="text-sm">{t('institution.submitMonthlyData')}</CardTitle>
             </CardHeader>
             <CardContent>
               <UploadFlow />
@@ -185,7 +186,7 @@ export default function InstitutionPage() {
         </TabsContent>
       </Tabs>
 
-      <AlertsPanel alerts={alerts} title={`Alertes — ${name}`} />
+      <AlertsPanel alerts={alerts} title={`${t('institution.alertsFor')} ${name}`} />
     </div>
   )
 }

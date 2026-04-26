@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { getForecasts, generateForecast } from '@/services/forecasts'
+import { useTranslation } from 'react-i18next'
 
 export default function ForecastsPage() {
+  const { t } = useTranslation()
   const [forecasts, setForecasts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -13,7 +15,7 @@ export default function ForecastsPage() {
   const handleGenerate = async () => {
     setGenerating(true)
     try {
-      await generateForecast(1, 1) // default institution + metric
+      await generateForecast(1, 1)
       const updated = await getForecasts()
       setForecasts(updated)
     } catch (err) {
@@ -30,17 +32,17 @@ export default function ForecastsPage() {
       <div className="flex items-start justify-between flex-wrap gap-4 fade-up">
         <div>
           <p className="text-[11px] uppercase tracking-[0.18em] text-ink3 num mb-1">
-            Prédictions · Risk Forecaster IA
+            {t('forecasts.subtitle')}
           </p>
           <h1 className="font-display text-4xl gold-shimmer tracking-tighter2">
-            Prévisions KPI
+            {t('forecasts.title')}
           </h1>
           <p className="text-ink3 text-sm mt-1">
-            Projections générées par l'IA basées sur les tendances historiques.
+            {t('forecasts.description')}
           </p>
         </div>
         <button onClick={handleGenerate} disabled={generating} className="btn-primary px-6 py-3 rounded-lg text-sm font-medium">
-          {generating ? 'Analyse en cours...' : '✦ Nouvelle prévision IA'}
+          {generating ? t('forecasts.analyzing') : t('forecasts.newForecast')}
         </button>
       </div>
 
@@ -49,10 +51,10 @@ export default function ForecastsPage() {
       {/* Stats summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 fade-up-1">
         {[
-          { label: 'Prévisions totales', value: forecasts.length, accent: 'text-sea', bg: 'bg-sea/5 border-sea/20' },
-          { label: 'Confiance haute', value: forecasts.filter((f: any) => f.confidence_upper > 80).length, accent: 'text-ok', bg: 'bg-ok/5 border-ok/20' },
-          { label: 'Confiance moyenne', value: forecasts.filter((f: any) => f.confidence_upper <= 80 && f.confidence_upper > 50).length, accent: 'text-warn', bg: 'bg-warn/5 border-warn/20' },
-          { label: 'Risque élevé', value: forecasts.filter((f: any) => f.confidence_upper <= 50).length, accent: 'text-crit', bg: 'bg-crit/5 border-crit/20' },
+          { label: t('forecasts.totalForecasts'), value: forecasts.length, accent: 'text-sea', bg: 'bg-sea/5 border-sea/20' },
+          { label: t('forecasts.highConfidence'), value: forecasts.filter((f: any) => f.confidence_upper > 80).length, accent: 'text-ok', bg: 'bg-ok/5 border-ok/20' },
+          { label: t('forecasts.mediumConfidence'), value: forecasts.filter((f: any) => f.confidence_upper <= 80 && f.confidence_upper > 50).length, accent: 'text-warn', bg: 'bg-warn/5 border-warn/20' },
+          { label: t('forecasts.highRisk'), value: forecasts.filter((f: any) => f.confidence_upper <= 50).length, accent: 'text-crit', bg: 'bg-crit/5 border-crit/20' },
         ].map(({ label, value, accent, bg }) => (
           <div key={label} className={`rounded-lg border p-4 ${bg}`}>
             <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-2">{label}</p>
@@ -63,7 +65,7 @@ export default function ForecastsPage() {
 
       {/* Forecasts table */}
       <div className="fade-up-2">
-        <h2 className="font-display text-2xl text-ink tracking-tighter2 mb-3">Toutes les prévisions</h2>
+        <h2 className="font-display text-2xl text-ink tracking-tighter2 mb-3">{t('forecasts.allForecasts')}</h2>
         {loading ? (
           <div className="space-y-3">
             {[1,2,3,4].map((i) => (
@@ -78,12 +80,12 @@ export default function ForecastsPage() {
             <table className="w-full text-sm">
               <thead className="bg-paper2 border-b border-rule">
                 <tr>
-                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Institution</th>
-                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Métrique</th>
-                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">Année cible</th>
-                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">Valeur prédite</th>
-                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">Intervalle</th>
-                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Modèle</th>
+                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">{t('forecasts.institution')}</th>
+                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">{t('forecasts.metric')}</th>
+                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">{t('forecasts.targetYear')}</th>
+                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">{t('forecasts.predictedValue')}</th>
+                  <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3 num">{t('forecasts.interval')}</th>
+                  <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">{t('forecasts.model')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -104,7 +106,7 @@ export default function ForecastsPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-rule bg-paper2/30 p-8 text-center">
-            <p className="text-ink3 text-sm">Aucune prévision disponible. Cliquez sur "Nouvelle prévision IA" pour commencer.</p>
+            <p className="text-ink3 text-sm">{t('forecasts.noForecasts')}</p>
           </div>
         )}
       </div>

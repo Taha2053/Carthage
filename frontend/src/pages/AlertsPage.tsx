@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react'
 import { getAlerts, resolveAlert } from '@/services/alerts'
-
-const SEVERITY_STYLE: Record<string, { label: string; dot: string; card: string }> = {
-  critical: { label: 'Critique', dot: 'dot-critical', card: 'border-crit/30 bg-crit/5' },
-  warning:  { label: 'Vigilance', dot: 'dot-warning', card: 'border-warn/30 bg-warn/5' },
-  info:     { label: 'Info', dot: 'dot-nodata', card: 'border-rule bg-paper2/50' },
-}
+import { useTranslation } from 'react-i18next'
 
 export default function AlertsPage() {
+  const { t, i18n } = useTranslation()
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('')
   const [resolving, setResolving] = useState<number | null>(null)
+
+  const SEVERITY_STYLE: Record<string, { labelKey: string; dot: string; card: string }> = {
+    critical: { labelKey: 'alerts.criticalBadge', dot: 'dot-critical', card: 'border-crit/30 bg-crit/5' },
+    warning:  { labelKey: 'alerts.vigilanceBadge', dot: 'dot-warning', card: 'border-warn/30 bg-warn/5' },
+    info:     { labelKey: 'alerts.infoBadge', dot: 'dot-nodata', card: 'border-rule bg-paper2/50' },
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -34,6 +36,7 @@ export default function AlertsPage() {
 
   const critCount = alerts.filter((a) => a.severity === 'critical').length
   const warnCount = alerts.filter((a) => a.severity === 'warning').length
+  const locale = i18n.language === 'en' ? 'en-GB' : 'fr-FR'
 
   return (
     <div className="space-y-8 py-6 px-6 max-w-[1400px] mx-auto">
@@ -42,13 +45,13 @@ export default function AlertsPage() {
       <div className="flex items-start justify-between flex-wrap gap-4 fade-up">
         <div>
           <p className="text-[11px] uppercase tracking-[0.18em] text-ink3 num mb-1">
-            Système d'alertes · Surveillance réseau
+            {t('alerts.subtitle')}
           </p>
           <h1 className="font-display text-4xl gold-shimmer tracking-tighter2">
-            Gestion des alertes
+            {t('alerts.title')}
           </h1>
           <p className="text-ink3 text-sm mt-1">
-            Anomalies détectées automatiquement avec explications IA.
+            {t('alerts.description')}
           </p>
         </div>
       </div>
@@ -58,29 +61,29 @@ export default function AlertsPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 fade-up-1">
         <div className="rounded-lg border p-4 bg-crit/5 border-crit/20">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-2">Critiques</p>
+          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-2">{t('alerts.criticalLabel')}</p>
           <p className="font-display text-3xl tracking-tighter2 text-crit">{critCount}</p>
         </div>
         <div className="rounded-lg border p-4 bg-warn/5 border-warn/20">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-2">Vigilance</p>
+          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-2">{t('alerts.vigilanceLabel')}</p>
           <p className="font-display text-3xl tracking-tighter2 text-warn">{warnCount}</p>
         </div>
         <div className="rounded-lg border p-4 bg-ok/5 border-ok/20">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-2">Total actives</p>
+          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-2">{t('alerts.totalActive')}</p>
           <p className="font-display text-3xl tracking-tighter2 text-ok">{alerts.length}</p>
         </div>
         <div className="rounded-lg border p-4 bg-sea/5 border-sea/20 flex items-end">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-1.5">Filtrer</p>
+            <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-1.5">{t('alerts.filter')}</p>
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="rounded border border-rule bg-paper px-3 py-1.5 text-xs text-ink focus:border-gold focus:outline-none"
             >
-              <option value="">Toutes</option>
-              <option value="critical">Critiques</option>
-              <option value="warning">Vigilance</option>
-              <option value="info">Info</option>
+              <option value="">{t('alerts.all')}</option>
+              <option value="critical">{t('alerts.critical')}</option>
+              <option value="warning">{t('alerts.vigilance')}</option>
+              <option value="info">{t('alerts.info')}</option>
             </select>
           </div>
         </div>
@@ -105,21 +108,21 @@ export default function AlertsPage() {
                     <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1 ${style.dot}`} />
                     <div>
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="pill">{style.label}</span>
+                        <span className="pill">{t(style.labelKey)}</span>
                         <span className="text-[11px] num text-ink3">
-                          {alert.created_at ? new Date(alert.created_at).toLocaleString('fr-FR') : '—'}
+                          {alert.created_at ? new Date(alert.created_at).toLocaleString(locale) : '—'}
                         </span>
                       </div>
-                      <p className="text-ink font-medium">{alert.message ?? `Anomalie détectée (ID: ${alert.id})`}</p>
+                      <p className="text-ink font-medium">{alert.message ?? `${t('alerts.anomalyDetected')} (ID: ${alert.id})`}</p>
                       {alert.explanation && (
                         <div className="mt-2 p-3 rounded-lg bg-paper/80 border border-rule">
-                          <p className="text-[11px] uppercase tracking-[0.1em] text-gold-deep mb-1">Explication IA</p>
+                          <p className="text-[11px] uppercase tracking-[0.1em] text-gold-deep mb-1">{t('alerts.aiExplanation')}</p>
                           <p className="text-sm text-ink2 leading-relaxed">{alert.explanation}</p>
                         </div>
                       )}
                       {alert.recommended_action && (
                         <p className="mt-2 text-sm text-sea">
-                          <span className="font-medium">Action recommandée :</span> {alert.recommended_action}
+                          <span className="font-medium">{t('alerts.recommendedAction')}</span> {alert.recommended_action}
                         </p>
                       )}
                     </div>
@@ -129,7 +132,7 @@ export default function AlertsPage() {
                     disabled={resolving === alert.id}
                     className="px-3 py-1.5 rounded-lg border border-ok/30 text-ok text-xs font-medium hover:bg-ok/10 transition-colors flex-shrink-0"
                   >
-                    {resolving === alert.id ? '...' : 'Résoudre'}
+                    {resolving === alert.id ? '...' : t('alerts.resolve')}
                   </button>
                 </div>
               </div>
@@ -138,8 +141,8 @@ export default function AlertsPage() {
         ) : (
           <div className="rounded-xl border border-dashed border-rule bg-paper2/30 p-10 text-center">
             <div className="text-5xl mb-4">✅</div>
-            <p className="font-display text-xl text-ink mb-2">Aucune alerte active</p>
-            <p className="text-sm text-ink3">Tous les indicateurs sont dans les seuils normaux.</p>
+            <p className="font-display text-xl text-ink mb-2">{t('alerts.noActiveAlerts')}</p>
+            <p className="text-sm text-ink3">{t('alerts.allNormal')}</p>
           </div>
         )}
       </div>
