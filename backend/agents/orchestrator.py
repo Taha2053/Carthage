@@ -194,10 +194,11 @@ Retourne UNIQUEMENT un JSON valide avec ce format exact :
                     **explanation,
                 })
                 # Persist explanation back into the alert row
-                await db.table("alerts").update({
+                update_q = db.table("alerts").update({
                     "explanation": explanation.get("explanation", ""),
                     "recommended_action": explanation.get("suggestion", ""),
-                }).eq("id", alert["id"]).execute()
+                }).eq("id", alert["id"])
+                await update_q.execute()
             results["anomalies"] = explained_alerts
 
         logger.info(f"[Orchestrator] ✅ Post-Upload Pipeline complete for {institution_name}")
@@ -259,10 +260,11 @@ Retourne UNIQUEMENT un JSON valide avec ce format exact :
                     peer_avg=float(alert.get("threshold") or 0) * 0.85,
                 )
                 explained.append({"alert_id": alert.get("id"), "metric_code": metric_code, **expl})
-                await db.table("alerts").update({
+                update_q = db.table("alerts").update({
                     "explanation": expl.get("explanation", ""),
                     "recommended_action": expl.get("suggestion", ""),
-                }).eq("id", alert["id"]).execute()
+                }).eq("id", alert["id"])
+                await update_q.execute()
             results["anomalies"] = explained
 
         # Risk Forecaster (one forecast per metric with enough history)
