@@ -1,5 +1,6 @@
 import api from './api'
 import type { Institution } from '@/types'
+export type { Institution }
 import { mockInstitutions } from '@/mock/data'
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'

@@ -20,6 +20,7 @@ const NAV_BY_ROLE: Record<Role | 'public', NavItem[]> = {
     { label: 'Prévisions',    href: '/forecasts' },
     { label: 'Téléversement', href: '/upload' },
     { label: 'Orchestrateur', href: '/orchestrator' },
+    { label: 'Intelligence', href: '/strategy' },
   ],
   institution_admin: [
     { label: 'Accueil',       href: '/' },
