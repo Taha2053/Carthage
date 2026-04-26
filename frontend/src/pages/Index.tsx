@@ -59,11 +59,11 @@ export default function Index() {
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
 
   return (
-    <div className="bg-paper min-h-screen carthage-bg">
+    <div className="bg-paper min-h-screen">
       <Navbar variant="light" />
 
       {/* ── Hero ── */}
-      <section className="relative">
+      <section className="relative carthage-bg on-dark">
         <div className="max-w-[1400px] mx-auto px-8 pt-14 pb-10">
           <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-ink3 num">
             <span>CarthaVillage · Réseau UCAR</span>
