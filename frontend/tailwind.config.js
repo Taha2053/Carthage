@@ -38,15 +38,28 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        hero: {
-          heading: 'hsl(var(--hero-heading))',
-          sub: 'hsl(var(--hero-sub))',
-        },
+        // NABD design system — direct values
+        paper:    '#F4EBD5',
+        paper2:   '#EBE0C8',
+        ink:      '#0F1923',
+        ink2:     '#2A3441',
+        ink3:     '#6B7A8D',
+        rule:     '#D6D1C7',
+        gold:     '#C5933A',
+        'gold-deep': '#9E7520',
+        sea:      '#1B4F72',
+        ok:       '#1E8449',
+        warn:     '#D4AC0D',
+        crit:     '#C0392B',
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      letterSpacing: {
+        tightish: '-0.012em',
+        tighter2: '-0.025em',
       },
       keyframes: {
         marquee: {
@@ -55,7 +68,7 @@ export default {
         },
       },
       animation: {
-        marquee: 'marquee 20s linear infinite',
+        marquee: 'marquee 40s linear infinite',
       },
     },
   },

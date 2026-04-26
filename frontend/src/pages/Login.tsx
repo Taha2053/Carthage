@@ -1,91 +1,124 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { login, redirectPath } = useAuthStore()
+  const { login, loading } = useAuthStore()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
-    await new Promise((r) => setTimeout(r, 600))
-    const ok = login(email, password)
-    setLoading(false)
+    const ok = await login(email, password)
     if (!ok) {
       setError('Email ou mot de passe incorrect.')
       return
     }
-    navigate(redirectPath ?? '/login')
+    const { redirectPath } = useAuthStore.getState()
+    navigate(redirectPath ?? '/central')
   }
 
+  const demo = (em: string) => { setEmail(em); setPassword('demo') }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100">
-      <div className="w-full max-w-sm space-y-6 px-4">
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-800 text-white text-xl font-bold shadow-lg">
-            ن
+    <div className="min-h-screen carthage-bg flex items-center justify-center px-4">
+      {/* Atmospheric background arcs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full border border-gold/10" />
+        <div className="absolute -top-20 -right-20 w-[400px] h-[400px] rounded-full border border-gold/8" />
+        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full border border-sea/10" />
+      </div>
+
+      <div className="relative w-full max-w-sm">
+        {/* Logo */}
+        <div className="text-center mb-8 fade-up">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink mb-4 shadow-xl">
+            <svg viewBox="0 0 64 64" className="w-8 h-8">
+              <path d="M8 38 Q16 26 24 34 Q32 42 40 30 Q48 18 56 28" fill="none" stroke="#C5933A" strokeWidth="3.5" strokeLinecap="round"/>
+              <circle cx="32" cy="20" r="3.5" fill="#C5933A"/>
+            </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">CarthaVillage</h1>
-          <p className="text-sm text-gray-500">Plateforme intelligente UCAR</p>
+          <h1 className="font-display text-3xl gold-shimmer font-semibold tracking-tighter2">CarthaVillage</h1>
+          <p className="text-ink3 text-sm mt-1 num">Plateforme intelligente UCAR</p>
         </div>
 
-        <Card className="shadow-xl border-0">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Connexion</CardTitle>
-            <CardDescription>Accédez à votre espace personnalisé</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Adresse e-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="president@ucar.tn"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
-              {error && (
-                <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
-              )}
-              <Button type="submit" className="w-full bg-blue-800 hover:bg-blue-900" disabled={loading}>
-                {loading ? 'Connexion en cours...' : 'Se connecter'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        {/* Card */}
+        <div className="bg-paper border border-rule rounded-xl shadow-2xl p-8 fade-up-1">
+          <h2 className="font-display text-2xl text-ink mb-1">Connexion</h2>
+          <p className="text-ink3 text-sm mb-6">Accédez à votre espace personnalisé</p>
 
-        <div className="rounded-lg border bg-white p-4 text-xs text-gray-400 space-y-1">
-          <p className="font-medium text-gray-500 mb-2">Comptes de démonstration :</p>
-          <p>president@ucar.tn / demo → Vue UCAR</p>
-          <p>directeur@fsegt.tn / demo → Vue direction</p>
-          <p>prof@fsegt.tn / demo → Vue enseignant</p>
-          <p>etudiant@fsegt.tn / demo → Vue étudiant</p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-[12px] uppercase tracking-[0.1em] text-ink3 mb-1.5">
+                Adresse e-mail
+              </label>
+              <input
+                id="email"
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                placeholder="president@ucar.tn"
+                className="w-full rounded-md border border-rule bg-paper2 px-3 py-2.5 text-sm text-ink placeholder:text-ink3/50 focus:outline-none focus:ring-2 focus:ring-gold/40 transition"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-[12px] uppercase tracking-[0.1em] text-ink3 mb-1.5">
+                Mot de passe
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="w-full rounded-md border border-rule bg-paper2 px-3 py-2.5 text-sm text-ink placeholder:text-ink3/50 focus:outline-none focus:ring-2 focus:ring-gold/40 transition"
+              />
+            </div>
+
+            {error && (
+              <p className="rounded-md bg-crit/10 border border-crit/20 px-3 py-2 text-sm text-crit">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full rounded-lg py-3 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {loading ? (
+                <span className="inline-block w-4 h-4 border-2 border-paper/30 border-t-paper rounded-full animate-spin" />
+              ) : null}
+              {loading ? 'Connexion en cours...' : 'Se connecter'}
+            </button>
+          </form>
+        </div>
+
+        {/* Demo accounts */}
+        <div className="mt-4 rounded-lg border border-rule bg-paper/60 backdrop-blur-sm p-4 fade-up-2">
+          <p className="text-[11px] uppercase tracking-[0.1em] text-ink3 mb-3">Comptes de démonstration</p>
+          <div className="space-y-1.5">
+            {[
+              { label: 'Présidence UCAR', email: 'president@ucar.tn', role: 'ucar_central' },
+              { label: 'Directeur FSEGT', email: 'directeur@fsegt.tn', role: 'institution_admin' },
+              { label: 'Enseignant',      email: 'prof@fsegt.tn',      role: 'enseignant' },
+              { label: 'Étudiant',        email: 'etudiant@fsegt.tn',  role: 'etudiant' },
+            ].map(({ label, email: em, role }) => (
+              <button
+                key={em}
+                onClick={() => demo(em)}
+                className="w-full text-left flex items-center justify-between px-3 py-2 rounded-md hover:bg-paper2 transition-colors group"
+              >
+                <span className="text-xs text-ink2 group-hover:text-ink">{label}</span>
+                <span className="text-[10px] num text-ink3">{role}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-ink3/60 mt-2 num">mot de passe : demo</p>
         </div>
       </div>
     </div>
