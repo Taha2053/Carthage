@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getReports, generateAIReport } from '@/services/reports'
 import { useTranslation } from 'react-i18next'
+import { ClipboardList } from 'lucide-react'
 
 export default function ReportsPage() {
   const { t, i18n } = useTranslation()
@@ -138,7 +139,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-rule bg-paper2/30 p-16 text-center">
-              <div className="text-5xl mb-4">📋</div>
+              <div className="flex justify-center mb-4 text-ink3"><ClipboardList size={48} strokeWidth={1.5} /></div>
               <p className="font-display text-xl text-ink mb-2">{t('reports.selectReport')}</p>
               <p className="text-sm text-ink3">{t('reports.orGenerate')}</p>
             </div>

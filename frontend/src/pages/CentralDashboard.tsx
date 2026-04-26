@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
+import {
+  Trophy, Bell, FileText, TrendingUp, Upload as UploadIcon, Sparkles, Users, Building
+} from 'lucide-react'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   Cell,
@@ -113,6 +117,30 @@ export default function CentralDashboard() {
           <p className="font-display text-3xl tracking-tighter2 text-crit">{alertsSummary.length}</p>
           <p className="text-[10px] text-ink3 mt-1 num">{t('dashboard.thisMonth')}</p>
         </div>
+      </div>
+
+      {/* Quick actions — features previously in the top nav */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 fade-up-1">
+        {[
+          { to: '/rankings',  icon: Trophy,     label: 'Classement',     hint: 'Top établissements' },
+          { to: '/alerts',    icon: Bell,       label: 'Alertes',        hint: `${alertsSummary.length} actives` },
+          { to: '/reports',   icon: FileText,   label: 'Rapports IA',    hint: 'Synthèses' },
+          { to: '/forecasts', icon: TrendingUp, label: 'Prévisions',     hint: 'Tendances 6 mois' },
+          { to: '/upload',    icon: UploadIcon, label: 'Téléversement',  hint: 'Import + OCR' },
+          { to: '/strategy',  icon: Sparkles,   label: 'Intelligence',   hint: 'Stratégies IA' },
+          { to: '/admin/staff', icon: Users,    label: 'Personnel',      hint: 'Profs & Admin' },
+          { to: '/admin/departments', icon: Building, label: 'Départements', hint: 'Structures' },
+        ].map(({ to, icon: Icon, label, hint }) => (
+          <Link
+            key={to}
+            to={to}
+            className="rounded-lg border border-rule bg-paper2/40 p-3 hover:border-gold/40 hover:bg-gold/5 transition-colors flex flex-col gap-1.5"
+          >
+            <Icon size={16} className="text-gold" />
+            <p className="text-[12px] font-semibold text-ink leading-tight">{label}</p>
+            <p className="text-[10px] text-ink3 leading-tight">{hint}</p>
+          </Link>
+        ))}
       </div>
 
       {/* Top alerts */}

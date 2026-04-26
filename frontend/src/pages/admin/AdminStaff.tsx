@@ -6,14 +6,16 @@ import { Plus, Edit2, Trash2, X } from 'lucide-react'
 interface Staff {
   id: number
   name: string
+  email: string
   role: string
   department: string
+  grade: string
   status: 'active' | 'inactive'
 }
 
 let MOCK_DATA: Staff[] = [
-  { id: 1, name: 'Dr. Karim Mansouri', role: 'Enseignant', department: 'INFORMATIQUE', status: 'active' },
-  { id: 2, name: 'Amina Ben Abdallah', role: 'Administration', department: 'SCOLARITÉ', status: 'active' },
+  { id: 1, name: 'Dr. Karim Mansouri', email: 'karim@ucar.tn', role: 'Enseignant', department: 'INFORMATIQUE', grade: 'Maître de conférences', status: 'active' },
+  { id: 2, name: 'Amina Ben Abdallah', email: 'amina@ucar.tn', role: 'Administration', department: 'SCOLARITÉ', grade: 'Chef de service', status: 'active' },
 ]
 
 export default function AdminStaff() {
@@ -59,7 +61,7 @@ export default function AdminStaff() {
           <h1 className="font-display text-4xl gold-shimmer tracking-tighter2">{t('admin.staff.title', 'Personnel')}</h1>
         </div>
         <button
-          onClick={() => { setCurrentEdit({ name: '', role: 'Enseignant', department: '' }); setIsModalOpen(true) }}
+          onClick={() => { setCurrentEdit({ name: '', email: '', role: 'Enseignant', department: '', grade: '' }); setIsModalOpen(true) }}
           className="btn-primary px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2"
         >
           <Plus className="w-4 h-4" /> {t('admin.staff.add', 'Ajouter un membre')}
@@ -77,7 +79,8 @@ export default function AdminStaff() {
             <thead className="bg-paper2 border-b border-rule">
               <tr>
                 <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Nom complet</th>
-                <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Rôle</th>
+                <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Email</th>
+                <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Rôle & Grade</th>
                 <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Département</th>
                 <th className="px-4 py-3 text-left text-[11px] uppercase tracking-[0.1em] text-ink3">Statut</th>
                 <th className="px-4 py-3 text-right text-[11px] uppercase tracking-[0.1em] text-ink3">Actions</th>
@@ -87,7 +90,11 @@ export default function AdminStaff() {
               {items.map((b) => (
                 <tr key={b.id} className="border-b border-rule last:border-0 hover:bg-paper2/50">
                   <td className="px-4 py-3 font-medium text-ink">{b.name}</td>
-                  <td className="px-4 py-3 text-ink2">{b.role}</td>
+                  <td className="px-4 py-3 text-ink2">{b.email}</td>
+                  <td className="px-4 py-3 text-ink2">
+                    <p>{b.role}</p>
+                    <p className="text-[11px] text-ink3">{b.grade}</p>
+                  </td>
                   <td className="px-4 py-3 text-ink2"><span className="pill">{b.department}</span></td>
                   <td className="px-4 py-3">
                     <span className={`pill ${b.status === 'active' ? 'pill-accent' : ''}`}>{b.status}</span>
@@ -119,12 +126,22 @@ export default function AdminStaff() {
                 <input required value={currentEdit?.name || ''} onChange={e => setCurrentEdit({ ...currentEdit, name: e.target.value })} className="w-full rounded border-rule bg-paper2/50 px-3 py-2 text-sm focus:border-gold focus:outline-none" />
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1">Rôle *</label>
-                <select required value={currentEdit?.role || ''} onChange={e => setCurrentEdit({ ...currentEdit, role: e.target.value })} className="w-full rounded border-rule bg-paper2/50 px-3 py-2 text-sm focus:border-gold focus:outline-none">
-                  <option value="Enseignant">Enseignant</option>
-                  <option value="Administration">Administration</option>
-                  <option value="Technique">Technique</option>
-                </select>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1">Email *</label>
+                <input type="email" required value={currentEdit?.email || ''} onChange={e => setCurrentEdit({ ...currentEdit, email: e.target.value })} className="w-full rounded border-rule bg-paper2/50 px-3 py-2 text-sm focus:border-gold focus:outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1">Rôle *</label>
+                  <select required value={currentEdit?.role || ''} onChange={e => setCurrentEdit({ ...currentEdit, role: e.target.value })} className="w-full rounded border-rule bg-paper2/50 px-3 py-2 text-sm focus:border-gold focus:outline-none">
+                    <option value="Enseignant">Enseignant</option>
+                    <option value="Administration">Administration</option>
+                    <option value="Technique">Technique</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1">Grade / Fonction *</label>
+                  <input required value={currentEdit?.grade || ''} onChange={e => setCurrentEdit({ ...currentEdit, grade: e.target.value })} className="w-full rounded border-rule bg-paper2/50 px-3 py-2 text-sm focus:border-gold focus:outline-none" placeholder="ex: Maître assistant" />
+                </div>
               </div>
               <div>
                 <label className="text-[11px] uppercase tracking-[0.1em] text-ink3 block mb-1">Département *</label>

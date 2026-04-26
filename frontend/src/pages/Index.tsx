@@ -6,6 +6,7 @@ import StatsSection from '@/components/landing/StatsSection'
 import InstitutionGrid from '@/components/landing/InstitutionGrid'
 import OpportunitiesFeed from '@/components/landing/OpportunitiesFeed'
 import FeedbackSection from '@/components/landing/FeedbackSection'
+import SocioCulturalCarousel from '@/components/landing/SocioCulturalCarousel'
 import { Trophy, Leaf, MapPin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -77,6 +78,14 @@ export default function Index() {
           <div className="grid grid-cols-12 gap-8 mt-12 mb-10">
             {/* left — headline */}
             <div className="col-span-12 lg:col-span-8">
+              <div className="flex items-center gap-4 mb-8 fade-up text-white">
+                <div className="bg-white/10 backdrop-blur border border-white/20 p-2 rounded-xl inline-flex shadow-lg">
+                  <img src="/logos/logo-ucar-2.png" alt="Université de Carthage" className="h-16 object-contain filter brightness-0 invert" style={{ WebkitFilter: 'brightness(0) invert(1)' }} />
+                </div>
+                <div className="bg-white p-2 text-ink text-sm rounded-xl inline-flex items-center gap-2 font-medium shadow-xl absolute translate-x-24 opacity-0 transition-opacity hover:opacity-100">
+                  <img src="/logos/logo-ucar-2.png" alt="Original Logo" className="h-12 object-contain" />
+                </div>
+              </div>
               <Pill>{t('landing.pill')}</Pill>
               <h1 className="font-display font-medium text-[72px] md:text-[96px] leading-[0.88] tracking-tighter2 mt-6 fade-up-1">
                 <span className="gold-shimmer">{t('landing.headline1')}{' '}
@@ -149,6 +158,63 @@ export default function Index() {
       <InstitutionGrid highlightedId={highlightedId} />
       <OpportunitiesFeed />
       <FeedbackSection />
+      <SocioCulturalCarousel />
+
+      {/* ── Partner Universities Marquee ── */}
+      <section className="border-t border-rule py-12 bg-paper overflow-hidden">
+        <div className="max-w-[1400px] mx-auto px-8 mb-8">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-ink3 text-center num">{t('landing.partnerEstablishments', 'Nos institutions partenaires')}</p>
+        </div>
+        <div className="relative w-full overflow-hidden flex items-center">
+          {/* Fading transparent edges over the marquee */}
+          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-[100px] bg-gradient-to-r from-[#F4EBD5] to-transparent"></div>
+          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-[100px] bg-gradient-to-l from-[#F4EBD5] to-transparent"></div>
+
+          <div className="flex shrink-0 min-w-full marquee-anim gap-16 items-center">
+            {[
+              "Ecole Nationale d'Architecture et d'Urbanisme de Tunis.jpeg",
+              "Ecole Polytechnique de Tunisie.jpeg",
+              "Ecole Supérieure de Technologie et d'Informatique à Carthage.png",
+              "Ecole Supérieure de l'Audiovisuel et du Cinéma de Gammarth.jpeg",
+              "Ecole Supérieure des Statistiques et d'Analyse de l'Information.png",
+              "Faculté des Sciences Economiques et de Gestion de Nabeul.jpeg",
+              "Faculté des Sciences Juridiques, Politiques et Sociales de Tunis.jpeg",
+              "Institut National Agronomique de Tunisie.jpeg",
+              "Institut National des Sciences Appliquées et de Technologie.jpeg",
+              "Institut Préparatoire aux Etudes Scientifiques et Techniques.jpeg",
+              "Institut des Hautes Etudes Commerciales de Carthage.jpg",
+              "Sup'Com.png",
+              "enstab.png",
+              "faculte des sciences de bizerte.jpeg"
+            ].map((filename, i) => (
+              <div key={i} className="flex-shrink-0 grayscale hover:grayscale-0 transition-all duration-300 transform hover:scale-110 px-4">
+                <img src={`/logos/${filename}`} alt="University Partner" className="h-16 w-auto mix-blend-multiply object-contain opacity-70 hover:opacity-100" />
+              </div>
+            ))}
+            {/* Duplicated for smooth infinite sliding */}
+            {[
+              "Ecole Nationale d'Architecture et d'Urbanisme de Tunis.jpeg",
+              "Ecole Polytechnique de Tunisie.jpeg",
+              "Ecole Supérieure de Technologie et d'Informatique à Carthage.png",
+              "Ecole Supérieure de l'Audiovisuel et du Cinéma de Gammarth.jpeg",
+              "Ecole Supérieure des Statistiques et d'Analyse de l'Information.png",
+              "Faculté des Sciences Economiques et de Gestion de Nabeul.jpeg",
+              "Faculté des Sciences Juridiques, Politiques et Sociales de Tunis.jpeg",
+              "Institut National Agronomique de Tunisie.jpeg",
+              "Institut National des Sciences Appliquées et de Technologie.jpeg",
+              "Institut Préparatoire aux Etudes Scientifiques et Techniques.jpeg",
+              "Institut des Hautes Etudes Commerciales de Carthage.jpg",
+              "Sup'Com.png",
+              "enstab.png",
+              "faculte des sciences de bizerte.jpeg"
+            ].map((filename, i) => (
+              <div key={`dup-${i}`} className="flex-shrink-0 grayscale hover:grayscale-0 transition-all duration-300 transform hover:scale-110 px-4">
+                <img src={`/logos/${filename}`} alt="University Partner" className="h-16 w-auto mix-blend-multiply object-contain opacity-70 hover:opacity-100" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── Footer ── */}
       <footer className="border-t border-rule mt-0" style={{ background: '#F4EBD5' }}>

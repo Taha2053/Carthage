@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { uploadFile, getUploadHistory } from '@/services/upload'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FileUp } from 'lucide-react'
 
 export default function UploadPage() {
   const { t, i18n } = useTranslation()
@@ -78,7 +79,7 @@ export default function UploadPage() {
               accept=".csv,.xlsx,.xls,.pdf,.png,.jpg,.jpeg"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
-            <div className="text-5xl mb-4">📄</div>
+            <div className="flex justify-center mb-4 text-gold"><FileUp size={48} strokeWidth={1.5} /></div>
             <p className="font-display text-xl text-ink mb-2">
               {file ? file.name : t('upload.dropFile')}
             </p>
