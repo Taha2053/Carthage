@@ -1,1 +1,114 @@
-{"root":["./src/App.tsx","./src/i18n.ts","./src/main.tsx","./src/vite-env.d.ts","./src/components/HeroSection.tsx","./src/components/Navbar.tsx","./src/components/SocialProofSection.tsx","./src/components/alerts/AlertsPanel.tsx","./src/components/institutions/InstitutionCard.tsx","./src/components/institutions/InstitutionLogo.tsx","./src/components/landing/FeedbackSection.tsx","./src/components/landing/InstitutionGrid.tsx","./src/components/landing/InstitutionMap.tsx","./src/components/landing/OpportunitiesFeed.tsx","./src/components/landing/StatsSection.tsx","./src/components/layout/AppLayout.tsx","./src/components/layout/Footer.tsx","./src/components/layout/ProtectedRoute.tsx","./src/components/layout/TopNav.tsx","./src/components/pulse/BriefingCard.tsx","./src/components/query/NLQueryBar.tsx","./src/components/strategy/CertificationTimeline.tsx","./src/components/strategy/CompetitionCard.tsx","./src/components/strategy/PartnershipGrid.tsx","./src/components/strategy/RankingDetailCard.tsx","./src/components/strategy/StrategicAreaCard.tsx","./src/components/strategy/StrategyChat.tsx","./src/components/strategy/StrategyDashboard.tsx","./src/components/strategy/useStrategyAgent.ts","./src/components/ui/avatar.tsx","./src/components/ui/badge.tsx","./src/components/ui/button.tsx","./src/components/ui/card.tsx","./src/components/ui/dialog.tsx","./src/components/ui/dropdown-menu.tsx","./src/components/ui/index.ts","./src/components/ui/input.tsx","./src/components/ui/label.tsx","./src/components/ui/progress.tsx","./src/components/ui/separator.tsx","./src/components/ui/skeleton.tsx","./src/components/ui/stat-card.tsx","./src/components/ui/table.tsx","./src/components/ui/tabs.tsx","./src/components/upload/UploadFlow.tsx","./src/data/institutions.ts","./src/data/opportunities.ts","./src/data/strategyCertifications.ts","./src/data/strategyCompetitions.ts","./src/data/strategyRankings.ts","./src/lib/supabase.ts","./src/lib/utils.ts","./src/mock/data.ts","./src/pages/AlertsPage.tsx","./src/pages/CentralDashboard.tsx","./src/pages/ForecastsPage.tsx","./src/pages/Index.tsx","./src/pages/InstitutionPage.tsx","./src/pages/Login.tsx","./src/pages/OrchestratorPage.tsx","./src/pages/RankingsPage.tsx","./src/pages/ReportsPage.tsx","./src/pages/StrategicIntelligencePage.tsx","./src/pages/StudentPage.tsx","./src/pages/TeacherPage.tsx","./src/pages/UploadPage.tsx","./src/pages/admin/AdminDepartments.tsx","./src/pages/admin/AdminStaff.tsx","./src/pages/admin/AdminStudents.tsx","./src/pages/teacher/TeacherAbsences.tsx","./src/pages/teacher/TeacherGrades.tsx","./src/services/adapters.ts","./src/services/alerts.ts","./src/services/api.ts","./src/services/forecasts.ts","./src/services/institutions.ts","./src/services/kpis.ts","./src/services/orchestrator.ts","./src/services/pulse.ts","./src/services/query.ts","./src/services/reports.ts","./src/services/staff.ts","./src/services/students.ts","./src/services/upload.ts","./src/store/authStore.ts","./src/types/index.ts","./src/utils/health.ts"],"errors":true,"version":"5.9.3"}
+{
+  "root": [
+    "./src/App.tsx",
+    "./src/i18n.ts",
+    "./src/main.tsx",
+    "./src/vite-env.d.ts",
+
+    "./src/components/HeroSection.tsx",
+    "./src/components/Navbar.tsx",
+    "./src/components/SocialProofSection.tsx",
+
+    "./src/components/alerts/AlertsPanel.tsx",
+
+    "./src/components/chat/ChatWidget.tsx",
+
+    "./src/components/institutions/InstitutionCard.tsx",
+    "./src/components/institutions/InstitutionLogo.tsx",
+
+    "./src/components/landing/FeedbackSection.tsx",
+    "./src/components/landing/InstitutionGrid.tsx",
+    "./src/components/landing/InstitutionMap.tsx",
+    "./src/components/landing/OpportunitiesFeed.tsx",
+    "./src/components/landing/StatsSection.tsx",
+
+    "./src/components/layout/AppLayout.tsx",
+    "./src/components/layout/Footer.tsx",
+    "./src/components/layout/ProtectedRoute.tsx",
+    "./src/components/layout/TopNav.tsx",
+
+    "./src/components/pulse/BriefingCard.tsx",
+
+    "./src/components/query/NLQueryBar.tsx",
+
+    "./src/components/strategy/CertificationTimeline.tsx",
+    "./src/components/strategy/CompetitionCard.tsx",
+    "./src/components/strategy/PartnershipGrid.tsx",
+    "./src/components/strategy/RankingDetailCard.tsx",
+    "./src/components/strategy/StrategicAreaCard.tsx",
+    "./src/components/strategy/StrategyChat.tsx",
+    "./src/components/strategy/StrategyDashboard.tsx",
+    "./src/components/strategy/useStrategyAgent.ts",
+
+    "./src/components/ui/avatar.tsx",
+    "./src/components/ui/badge.tsx",
+    "./src/components/ui/button.tsx",
+    "./src/components/ui/card.tsx",
+    "./src/components/ui/dialog.tsx",
+    "./src/components/ui/dropdown-menu.tsx",
+    "./src/components/ui/index.ts",
+    "./src/components/ui/input.tsx",
+    "./src/components/ui/label.tsx",
+    "./src/components/ui/progress.tsx",
+    "./src/components/ui/separator.tsx",
+    "./src/components/ui/skeleton.tsx",
+    "./src/components/ui/stat-card.tsx",
+    "./src/components/ui/table.tsx",
+    "./src/components/ui/tabs.tsx",
+
+    "./src/components/upload/UploadFlow.tsx",
+
+    "./src/data/institutions.ts",
+    "./src/data/opportunities.ts",
+    "./src/data/strategyCertifications.ts",
+    "./src/data/strategyCompetitions.ts",
+    "./src/data/strategyRankings.ts",
+
+    "./src/lib/supabase.ts",
+    "./src/lib/utils.ts",
+
+    "./src/mock/data.ts",
+
+    "./src/pages/AlertsPage.tsx",
+    "./src/pages/CentralDashboard.tsx",
+    "./src/pages/ForecastsPage.tsx",
+    "./src/pages/Index.tsx",
+    "./src/pages/InstitutionPage.tsx",
+    "./src/pages/Login.tsx",
+    "./src/pages/OrchestratorPage.tsx",
+    "./src/pages/RankingsPage.tsx",
+    "./src/pages/ReportsPage.tsx",
+    "./src/pages/StrategicIntelligencePage.tsx",
+    "./src/pages/StudentPage.tsx",
+    "./src/pages/TeacherPage.tsx",
+    "./src/pages/UploadPage.tsx",
+
+    "./src/pages/admin/AdminDepartments.tsx",
+    "./src/pages/admin/AdminStaff.tsx",
+    "./src/pages/admin/AdminStudents.tsx",
+
+    "./src/pages/teacher/TeacherAbsences.tsx",
+    "./src/pages/teacher/TeacherGrades.tsx",
+
+    "./src/services/adapters.ts",
+    "./src/services/alerts.ts",
+    "./src/services/api.ts",
+    "./src/services/forecasts.ts",
+    "./src/services/institutions.ts",
+    "./src/services/kpis.ts",
+    "./src/services/orchestrator.ts",
+    "./src/services/pulse.ts",
+    "./src/services/query.ts",
+    "./src/services/reports.ts",
+    "./src/services/staff.ts",
+    "./src/services/students.ts",
+    "./src/services/upload.ts",
+
+    "./src/store/authStore.ts",
+
+    "./src/types/index.ts",
+    "./src/utils/health.ts"
+  ],
+  "errors": true,
+  "version": "5.9.3"
+}

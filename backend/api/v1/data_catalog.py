@@ -4,6 +4,7 @@ API v1 — Data Catalog
 from __future__ import annotations
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
+from supabase._async.client import AsyncClient
 from core.database import get_db
 
 router = APIRouter(prefix="/data-catalog", tags=["Data Catalog"])
@@ -14,7 +15,7 @@ async def search_catalog(
     q: Optional[str] = Query(None, description="Search term"),
     institution_id: Optional[int] = Query(None),
     data_type: Optional[str] = Query(None),
-    db=Depends(get_db),
+    db: AsyncClient = Depends(get_db),
 ):
     """Search all datasets — like Google for university data."""
     query = db.table("data_catalog").select("*")
@@ -26,12 +27,12 @@ async def search_catalog(
         query = query.eq("data_type", data_type)
     query = query.order("access_count", desc=True).limit(50)
     
-    response = query.execute()
+    response = await query.execute()
     return response.data
 
 
 @router.get("/stats")
-async def catalog_stats(db=Depends(get_db)):
+async def catalog_stats(db: AsyncClient = Depends(get_db)):
     """Usage statistics across all data."""
     # Supabase aggregate queries require workarounds or calling RPC.
     # For now we'll do in-memory for the last 1000 logs if no RPC exists, 
@@ -39,14 +40,14 @@ async def catalog_stats(db=Depends(get_db)):
     
     # Just returning a placeholder since aggregation via REST is limited.
     # We can fetch the counts manually
-    total_resp = db.table("upload_log").select("id", count="exact").execute()
+    total_resp = await db.table("upload_log").select("id", count="exact").execute()
     total_uploads = total_resp.count if total_resp.count is not None else 0
     
-    dup_resp = db.table("upload_log").select("id", count="exact").eq("is_duplicate", True).execute()
+    dup_resp = await db.table("upload_log").select("id", count="exact").eq("is_duplicate", True).execute()
     duplicates = dup_resp.count if dup_resp.count is not None else 0
     
     # We'll fetch rows to sum/avg since REST doesn't natively support sum/avg without RPC
-    rows_resp = db.table("upload_log").select("rows_inserted, data_quality_score").limit(1000).execute()
+    rows_resp = await db.table("upload_log").select("rows_inserted, data_quality_score").limit(1000).execute()
     total_records = 0
     quality_scores = []
     
