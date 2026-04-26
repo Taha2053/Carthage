@@ -77,3 +77,57 @@ async def register_download(report_id: int, db: AsyncClient = Depends(get_db)):
     # Then update
     update_resp = await db.table("reports").update({"download_count": current_count + 1}).eq("id", report_id).execute()
     return {"message": "Download registered", "download_count": update_resp.data[0].get("download_count")}
+
+
+@router.post("/generate/ai")
+async def generate_ai_report(
+    institution_id: int, 
+    period: str = Query(..., description="e.g. 2024-2025 Semester 1"),
+    db: AsyncClient = Depends(get_db)
+):
+    """Trigger the AI Report Writer to generate a comprehensive markdown report."""
+    from agents.report_writer import write_report
+    
+    # 1. Fetch institution name
+    inst_resp = await db.table("dim_institution").select("name, code").eq("id", institution_id).execute()
+    if not inst_resp.data:
+        raise HTTPException(status_code=404, detail="Institution not found")
+    institution_name = inst_resp.data[0]["name"]
+    
+    # 2. Fetch all KPIs for this institution to give context to the AI
+    # In a real app, you'd filter by the specific time_id matching the period
+    kpi_resp = await db.table("fact_kpis").select("value, dim_metric(code, name)").eq("institution_id", institution_id).limit(50).execute()
+    
+    all_kpis = {}
+    for row in kpi_resp.data:
+        metric = row.get("dim_metric")
+        if metric:
+            all_kpis[metric["name"]] = row.get("value")
+            
+    # 3. Call the AI Report Writer Agent
+    report_content = await write_report(
+        institution=institution_name,
+        period=period,
+        all_kpis=all_kpis
+    )
+    
+    # 4. Save the generated report to the database
+    new_report = {
+        "institution_id": institution_id,
+        "title": f"Rapport IA - {institution_name} ({period})",
+        "report_type": "AI_GENERATED",
+        "file_url": "", # Would be populated if we saved the markdown to an actual PDF in storage
+        "generated_by": "System (Mistral AI)",
+        "status": "published",
+        "description": report_content[:200] + "..." # Snippet
+    }
+    
+    insert_resp = await db.table("reports").insert(new_report).execute()
+    
+    if not insert_resp.data:
+        raise HTTPException(status_code=500, detail="Failed to save generated report")
+        
+    return {
+        "report": insert_resp.data[0],
+        "markdown_content": report_content
+    }

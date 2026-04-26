@@ -64,18 +64,68 @@ class IngestionService:
         
         filename_lower = filename.lower()
         
-        # Skip parsing for non-data files (PDF/Images) - for OCR later
+        # Handle non-data files (PDF/Images) with OCR + AI Analyst
         non_data_extensions = ('.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.docx', '.doc')
         if any(filename_lower.endswith(ext) for ext in non_data_extensions):
-            warnings.append({
-                "type": "non_data_file",
-                "message": f"File {filename} stored - will be processed by OCR later",
-            })
+            from services.ocr_service import ocr_service
+            from agents.analyst import extract_from_file
             
-            # Still count as parsed, just store for OCR
-            total = 1  # The file itself
-            quality_score = 100.0
+            logger.info(f"🔍 Running OCR on {filename}")
+            extracted_text = await ocr_service.extract_text(file_content, filename)
+            
+            if not extracted_text:
+                raise ValueError("OCR failed to extract text")
+                
+            logger.info(f"🧠 Running AI Analyst on {filename}")
+            ai_decision = await extract_from_file(data_text=extracted_text, filename=filename, institution_id=str(institution_id))
+            
+            category = ai_decision.get("category", "COLD")
             rows_inserted = 0
+            
+            if category == "HOT":
+                # Insert extracted KPIs into fact_kpis
+                kpis = ai_decision.get("kpis", [])
+                for kpi in kpis:
+                    metric_code = str(kpi.get("metric_code", "")).strip().lower()
+                    if not metric_code: continue
+                    
+                    metric_result = await db.table("dim_metric").select("id").eq("code", metric_code).execute()
+                    if not metric_result.data: continue
+                    
+                    time_id = await self._resolve_time_id(db, ay=kpi.get("academic_year"), semester=kpi.get("semester"))
+                    if not time_id: continue
+                    
+                    kpi_data = {
+                        "institution_id": institution_id,
+                        "metric_id": metric_result.data[0]["id"],
+                        "time_id": time_id,
+                        "value": float(kpi.get("value", 0)),
+                        "source": "ocr_ai_agent",
+                    }
+                    await db.table("fact_kpis").insert(kpi_data).execute()
+                    rows_inserted += 1
+                    
+                message = f"AI Analyst marked as HOT. Inserted {rows_inserted} KPIs."
+                
+            elif category == "WARM":
+                # Insert text summary into RAG documents
+                from services.document_ingestion import ingest_document
+                await ingest_document(
+                    db=db,
+                    content=extracted_text.encode('utf-8'),
+                    filename=filename,
+                    institution_id=institution_id,
+                    doc_type="ocr_document",
+                    source="ocr_ai_agent",
+                    title=f"Scanned Document: {filename}"
+                )
+                message = f"AI Analyst marked as WARM. Sent to RAG Knowledge Base."
+                rows_inserted = 1
+                
+            else:
+                message = f"AI Analyst marked as COLD. Archived only."
+
+            elapsed_ms = int((time.time() - start_time) * 1000)
             
             upload_log = {
                 "institution_id": institution_id,
@@ -83,11 +133,11 @@ class IngestionService:
                 "filename": filename,
                 "file_size_bytes": len(file_content),
                 "file_hash": file_hash,
-                "rows_parsed": total,
+                "rows_parsed": 1,
                 "rows_inserted": rows_inserted,
                 "rows_failed": 0,
-                "status": "stored_for_ocr",
-                "data_quality_score": quality_score,
+                "status": "completed",
+                "data_quality_score": ai_decision.get("score", 0),
                 "uploaded_by": uploaded_by,
                 "processing_ms": elapsed_ms,
                 "archive_path": storage_path,
@@ -95,17 +145,15 @@ class IngestionService:
             
             await db.table("upload_log").insert(upload_log).execute()
             
-            logger.info(f"✅ File stored for OCR: {filename}")
-            
             return {
                 "status": "completed",
                 "is_duplicate": False,
-                "rows_parsed": total,
-                "rows_inserted": 0,
+                "rows_parsed": 1,
+                "rows_inserted": rows_inserted,
                 "rows_failed": 0,
-                "data_quality_score": quality_score,
+                "data_quality_score": ai_decision.get("score", 0),
                 "processing_ms": elapsed_ms,
-                "message": f"File stored for OCR processing: {filename}",
+                "message": message,
             }
         
         try:

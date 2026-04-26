@@ -209,26 +209,55 @@ async def upload_details(upload_id: int):
 async def extract_preview(
     file: UploadFile = File(...),
 ):
-    """Extract KPIs preview from CSV/Excel/PDF/Image/Doc (OCR placeholder)."""
+    """Extract KPIs preview using OCR and AI Analyst for Images/PDFs, or Pandas for CSV/Excel."""
+    from services.ocr_service import ocr_service
+    from agents.analyst import extract_from_file
+    
     content = await file.read()
     filename = file.filename or "extract"
+    filename_lower = filename.lower()
     
     # Allowed file types
     ALLOWED_EXTENSIONS = [".csv", ".xlsx", ".xls", ".pdf", ".png", ".jpg", ".jpeg", ".docx", ".doc"]
-    if not any(filename.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
+    if not any(filename_lower.endswith(ext) for ext in ALLOWED_EXTENSIONS):
         raise HTTPException(status_code=400, detail="File type not allowed")
     
     try:
-        df, col_mapping, warnings = await ingestion_service.parse_file(db, content, filename)
-        preview = df.head(10).to_dict(orient="records")
-        
-        return {
-            "preview": preview,
-            "columns": list(df.columns),
-            "col_mapping": col_mapping,
-            "total_rows": len(df),
-            "warnings": warnings,
-        }
+        # Route 1: Images & PDFs (OCR + AI Analyst)
+        if filename_lower.endswith(('.pdf', '.png', '.jpg', '.jpeg')):
+            logger.info(f"🔍 Routing {filename} to OCR Service")
+            extracted_text = await ocr_service.extract_text(content, filename)
+            
+            if not extracted_text:
+                raise ValueError("OCR failed to extract any text from the document.")
+                
+            logger.info(f"🧠 Sending OCR text to AI Analyst")
+            ai_decision = await extract_from_file(data_text=extracted_text, filename=filename, institution_id="preview")
+            
+            return {
+                "filename": filename,
+                "relevance_score": ai_decision.get("score"),
+                "category": ai_decision.get("category"),
+                "summary": ai_decision.get("summary", ""),
+                "extracted_kpis": ai_decision.get("kpis", []),
+                "method": "OCR + AI Agent"
+            }
+            
+        # Route 2: CSV/Excel (Pandas + Legacy mapping)
+        else:
+            db = await get_supabase()
+            df, col_mapping, warnings = await ingestion_service.parse_file(db, content, filename)
+            preview = df.head(10).to_dict(orient="records")
+            
+            return {
+                "preview": preview,
+                "columns": list(df.columns),
+                "col_mapping": col_mapping,
+                "total_rows": len(df),
+                "warnings": warnings,
+                "method": "Pandas"
+            }
         
     except Exception as e:
+        logger.error(f"Extraction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

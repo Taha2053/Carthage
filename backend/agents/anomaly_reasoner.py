@@ -12,7 +12,7 @@ from typing import Dict
 logger = logging.getLogger(__name__)
 
 
-def reason_anomaly(
+async def reason_anomaly(
     institution: str,
     kpi_key: str,
     value: float,
@@ -36,15 +36,48 @@ def reason_anomaly(
             "suggestion": "Renforcer le suivi pédagogique...",
             "severity": "critical"
         }
-
-    Implementation notes for teammate:
-        Prompt: explain WHY this is anomalous, compare to peers, suggest action
-        Use OpenAI with structured output (JSON mode)
     """
-    logger.info(f"[STUB] reason_anomaly called: {institution}/{kpi_key}={value}")
-    return {
-        "title": f"Anomalie détectée: {kpi_key} à {institution}",
-        "explanation": f"Valeur {value} dépasse le seuil {threshold} (moyenne pairs: {peer_avg})",
-        "suggestion": "Agent AI non configuré — analyse en attente.",
-        "severity": "critical" if value > threshold * 1.5 else "warning",
-    }
+    from core.llm import call_llm
+    import json
+    
+    logger.info(f"[AnomalyReasoner] Analyzing {kpi_key} for {institution}")
+
+    prompt = f"""
+    You are a university data intelligence AI.
+    An anomaly was detected for institution '{institution}'.
+    KPI: {kpi_key}
+    Current Value: {value}
+    Threshold Breached: {threshold}
+    Average across peer institutions: {peer_avg}
+    
+    Explain WHY this is anomalous, compare it to peers, and suggest an actionable solution in French.
+    Determine if severity is "warning" or "critical".
+    
+    Return ONLY valid JSON in this exact format:
+    {{
+        "title": "Short descriptive title in French",
+        "explanation": "Clear explanation of the anomaly in French",
+        "suggestion": "Actionable suggestion in French",
+        "severity": "critical" 
+    }}
+    """
+    
+    try:
+        response = await call_llm(prompt, temperature=0.1)
+        
+        # Clean markdown if present
+        if response.startswith("```json"):
+            response = response[7:-3]
+        elif response.startswith("```"):
+            response = response[3:-3]
+            
+        decision = json.loads(response.strip())
+        return decision
+    except Exception as e:
+        logger.error(f"[AnomalyReasoner] Failed to reason anomaly: {e}")
+        return {
+            "title": f"Anomalie détectée: {kpi_key} à {institution}",
+            "explanation": f"Valeur {value} dépasse le seuil {threshold} (moyenne pairs: {peer_avg}). Raisonnement IA indisponible.",
+            "suggestion": "Vérifier la validité des données saisies.",
+            "severity": "critical" if value > threshold * 1.5 else "warning",
+        }

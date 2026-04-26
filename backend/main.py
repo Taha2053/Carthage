@@ -100,3 +100,11 @@ async def rag_chat_ui():
     """Serve the RAG chat HTML interface."""
     html_path = os.path.join(os.path.dirname(__file__), "rag_chat.html")
     return FileResponse(html_path, media_type="text/html")
+
+
+# ── Upload UI ──────────────────────────────────────────────
+@app.get("/upload-test", tags=["Tools"], include_in_schema=False)
+async def upload_test_ui():
+    """Serve the test interface for the upload and OCR pipeline."""
+    html_path = os.path.join(os.path.dirname(__file__), "upload_test.html")
+    return FileResponse(html_path, media_type="text/html")

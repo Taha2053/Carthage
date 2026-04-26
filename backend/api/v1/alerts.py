@@ -86,3 +86,43 @@ async def resolve_alert(
     if not response.data:
         raise HTTPException(status_code=404, detail="Alert not found")
     return response.data[0]
+
+
+@router.post("/{alert_id}/explain")
+async def explain_alert(alert_id: int, db: AsyncClient = Depends(get_db)):
+    """Trigger the AI Anomaly Reasoner to explain this alert and suggest an action."""
+    from agents.anomaly_reasoner import reason_anomaly
+    
+    # Fetch the alert and related institution/metric
+    alert_resp = await db.table("alerts").select("*, dim_institution(code), dim_metric(code)").eq("id", alert_id).execute()
+    
+    if not alert_resp.data:
+        raise HTTPException(status_code=404, detail="Alert not found")
+        
+    alert = alert_resp.data[0]
+    institution_code = alert.get("dim_institution", {}).get("code", "Unknown")
+    metric_code = alert.get("dim_metric", {}).get("code", "Unknown")
+    value = float(alert.get("value") or 0)
+    threshold = float(alert.get("threshold") or 0)
+    
+    # Run the AI Reasoner
+    ai_explanation = await reason_anomaly(
+        institution=institution_code,
+        kpi_key=metric_code,
+        value=value,
+        threshold=threshold,
+        peer_avg=threshold * 0.9  # Simulated peer average for hackathon
+    )
+    
+    # Update the alert in the database with the AI's explanation and suggestion
+    update_data = {
+        "explanation": ai_explanation.get("explanation", ""),
+        "recommended_action": ai_explanation.get("suggestion", ""),
+    }
+    
+    update_resp = await db.table("alerts").update(update_data).eq("id", alert_id).execute()
+    
+    if not update_resp.data:
+        raise HTTPException(status_code=500, detail="Failed to update alert with AI explanation")
+        
+    return update_resp.data[0]
