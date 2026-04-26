@@ -82,7 +82,9 @@ class Settings(BaseSettings):
     # ── Supabase DB Region (for auto-pooler conversion) ──────
     SUPABASE_DB_REGION: str = "us-east-1"
 
-    # ── OpenAI (teammate's agents) ───────────────────────────
+    # ── AI (Mistral free tier) ────────────────────────────────
+    MISTRAL_API_KEY: str = ""
+    # Keep OpenAI key field for backward compat (unused now)
     OPENAI_API_KEY: str = ""
 
     # ── CORS ─────────────────────────────────────────────────

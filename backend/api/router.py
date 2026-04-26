@@ -26,6 +26,7 @@ from api.v1.research import router as research_router
 from api.v1.spaces import router as spaces_router
 from api.v1.equipment import router as equipment_router
 from api.v1.forecasts import router as forecasts_router
+from api.v1.documents import router as documents_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -51,3 +52,4 @@ api_router.include_router(research_router)
 api_router.include_router(spaces_router)
 api_router.include_router(equipment_router)
 api_router.include_router(forecasts_router)
+api_router.include_router(documents_router)
