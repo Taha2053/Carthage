@@ -29,8 +29,8 @@ export default function Sidebar() {
           ن
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-sm font-semibold text-gray-900">NABD</span>
-          <span className="text-xs text-gray-400">نبض — Université de Carthage</span>
+          <span className="text-sm font-semibold text-gray-900">CarthaVillage</span>
+          <span className="text-xs text-gray-400">Université de Carthage</span>
         </div>
       </div>
 

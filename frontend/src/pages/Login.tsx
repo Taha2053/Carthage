@@ -35,8 +35,8 @@ export default function Login() {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-800 text-white text-xl font-bold shadow-lg">
             ن
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">NABD</h1>
-          <p className="text-sm text-gray-500">نبض — Plateforme intelligente UCAR</p>
+          <h1 className="text-2xl font-bold text-gray-900">CarthaVillage</h1>
+          <p className="text-sm text-gray-500">Plateforme intelligente UCAR</p>
         </div>
 
         <Card className="shadow-xl border-0">

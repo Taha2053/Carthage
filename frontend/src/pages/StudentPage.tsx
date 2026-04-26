@@ -25,7 +25,7 @@ export default function StudentPage() {
       >
         <Sparkles className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
         <div>
-          <p className="text-xs font-semibold text-blue-700 mb-1">Conseil personnalisé NABD</p>
+          <p className="text-xs font-semibold text-blue-700 mb-1">Conseil personnalisé CarthaVillage</p>
           <p className="text-sm text-gray-700 leading-relaxed">{nudge}</p>
         </div>
       </motion.div>

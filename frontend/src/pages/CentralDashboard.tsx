@@ -8,6 +8,19 @@ import { healthToDot } from '@/utils/health'
 
 const allAlerts = mockInstitutions.flatMap((i) => i.alerts)
 
+const withAcademique = mockInstitutions.filter((i) => i.current.academique)
+const avgReussite = Math.round(
+  withAcademique.reduce((acc, i) => acc + (i.current.academique?.tauxReussite ?? 0), 0) /
+    withAcademique.length,
+)
+
+const STATS = [
+  { label: 'Établissements critiques', value: mockInstitutions.filter((i) => i.health === 'critical').length, color: 'text-red-600' },
+  { label: 'Alertes actives', value: allAlerts.length, color: 'text-amber-600' },
+  { label: 'Rapports manquants', value: mockInstitutions.filter((i) => i.health === 'no_data').length, color: 'text-gray-500' },
+  { label: 'Taux de réussite moyen', value: `${avgReussite}%`, color: 'text-emerald-600' },
+]
+
 export default function CentralDashboard() {
   const nlRef = useRef<HTMLDivElement>(null)
 
@@ -63,12 +76,7 @@ export default function CentralDashboard() {
           <div className="rounded-lg border bg-white p-4 space-y-3">
             <p className="text-sm font-medium text-gray-700">Vue synthétique</p>
             <div className="space-y-2 text-sm">
-              {[
-                { label: 'Établissements critiques', value: mockInstitutions.filter(i => i.health === 'critical').length, color: 'text-red-600' },
-                { label: 'Alertes actives', value: allAlerts.length, color: 'text-amber-600' },
-                { label: 'Rapports manquants', value: mockInstitutions.filter(i => i.health === 'no_data').length, color: 'text-gray-500' },
-                { label: 'Taux de réussite moyen', value: `${Math.round(mockInstitutions.filter(i => i.current.academique).reduce((acc, i) => acc + (i.current.academique?.tauxReussite ?? 0), 0) / mockInstitutions.filter(i => i.current.academique).length)}%`, color: 'text-emerald-600' },
-              ].map(({ label, value, color }) => (
+              {STATS.map(({ label, value, color }) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-gray-500">{label}</span>
                   <span className={`font-semibold ${color}`}>{value}</span>

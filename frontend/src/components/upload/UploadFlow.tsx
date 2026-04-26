@@ -67,7 +67,7 @@ export default function UploadFlow() {
       >
         <CheckCircle2 className="h-12 w-12 text-emerald-500" />
         <p className="font-semibold text-gray-800">Données soumises avec succès</p>
-        <p className="text-sm text-gray-400">Les KPIs ont été intégrés au système NABD.</p>
+        <p className="text-sm text-gray-400">Les KPIs ont été intégrés au système CarthaVillage.</p>
         <Button variant="outline" size="sm" onClick={() => { setSubmitted(false); setUiState('idle') }}>
           Soumettre un autre fichier
         </Button>
@@ -113,7 +113,7 @@ export default function UploadFlow() {
           className="space-y-6 py-6"
         >
           <div className="text-center">
-            <p className="font-medium text-gray-800">Analyse en cours par NABD Intelligence...</p>
+            <p className="font-medium text-gray-800">Analyse en cours par CarthaVillage Intelligence...</p>
             <p className="text-sm text-gray-400 mt-1">Extraction et validation des indicateurs</p>
           </div>
 

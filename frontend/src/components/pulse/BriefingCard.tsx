@@ -34,7 +34,7 @@ export default function BriefingCard({ briefing, onAskQuestion }: Props) {
                   Briefing hebdomadaire
                 </CardTitle>
                 <CardDescription className="text-blue-600 text-xs mt-0.5">
-                  {briefing.weekLabel} · Généré par NABD Intelligence
+                  {briefing.weekLabel} · Généré par CarthaVillage Intelligence
                 </CardDescription>
               </div>
               <span className="text-xs text-blue-400 font-mono">
@@ -98,7 +98,7 @@ export default function BriefingCard({ briefing, onAskQuestion }: Props) {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Briefing complet — {briefing.weekLabel}</DialogTitle>
-            <DialogDescription>Analyse générée automatiquement par NABD Intelligence</DialogDescription>
+            <DialogDescription>Analyse générée automatiquement par CarthaVillage Intelligence</DialogDescription>
           </DialogHeader>
           <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed mt-4">
             {briefing.fullText}

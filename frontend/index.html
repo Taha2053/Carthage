@@ -1,14 +1,175 @@
 <!doctype html>
-<html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/nabd-logo.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <title>NABD — Université de Carthage</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CarthaVillage — Université de Carthage · Intelligence Platform</title>
+  <meta name="description" content="CarthaVillage is the unified intelligence platform for the University of Carthage — 35 institutions, 30,000+ students, one signal." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"DM Serif Display"', 'Georgia', 'serif'],
+            sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            mono: ['"JetBrains Mono"', 'ui-monospace'],
+            arabic: ['"Noto Naskh Arabic"', 'serif'],
+          },
+          colors: {
+            /* Deep Mediterranean palette — Carthage inspired */
+            paper:   '#F7F5F0',   /* warm parchment */
+            paper2:  '#EDEAE3',   /* sandy stone */
+            ink:     '#0F1923',   /* Carthage night */
+            ink2:    '#2A3441',   /* deep dusk */
+            ink3:    '#6B7A8D',   /* muted blue-gray */
+            rule:    '#D6D1C7',   /* stone rule */
+            accent:  '#C5933A',   /* Punic gold */
+            accent2: '#9E7520',   /* deep gold */
+            blue:    '#1B4F72',   /* Mediterranean blue */
+            blue2:   '#2E86C1',   /* lighter sea blue */
+            ok:      '#1E8449',   /* success green */
+            warn:    '#D4AC0D',   /* amber warning */
+            crit:    '#C0392B',   /* Roman red */
+          },
+          letterSpacing: {
+            tightish: '-0.012em',
+            tighter2: '-0.025em',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { color-scheme: light; }
+    html, body { background: #F7F5F0; }
+    body { font-family: Inter, system-ui, sans-serif; color: #0F1923; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    .font-display { font-family: 'DM Serif Display', Georgia, serif; }
+    .num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: 'tnum' 1; }
+    .ar  { font-family: 'Noto Naskh Arabic', serif; direction: rtl; }
+
+    /* Decorative lines */
+    .hairline { background-image: linear-gradient(to right, #D6D1C7 50%, transparent 50%); background-size: 6px 1px; background-repeat: repeat-x; height: 1px; }
+
+    /* Grain overlay */
+    .grain { background-image: radial-gradient(rgba(15,25,35,0.03) 1px, transparent 1px); background-size: 3px 3px; }
+
+    /* Paper texture */
+    .paper-tex {
+      background-color: #F7F5F0;
+      background-image:
+        radial-gradient(rgba(27,79,114,0.018) 1px, transparent 1px),
+        radial-gradient(rgba(197,147,58,0.02) 1px, transparent 1px);
+      background-size: 5px 5px, 7px 7px;
+      background-position: 0 0, 2px 3px;
+    }
+
+    /* Scrollbar hide */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+
+    /* Pulse EKG animation */
+    @keyframes ekg { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -100; } }
+    .ekg-anim { stroke-dasharray: 4 0; animation: ekg 18s linear infinite; }
+
+    /* Marquee */
+    @keyframes scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .marquee { animation: scroll-x 40s linear infinite; }
+    .marquee:hover { animation-play-state: paused; }
+
+    /* Nav active indicator */
+    .nav-link { position: relative; }
+    .nav-link[data-active="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: linear-gradient(90deg, #C5933A, #1B4F72); border-radius: 2px; }
+
+    /* Selection color */
+    ::selection { background: #C5933A; color: #F7F5F0; }
+
+    /* Primary button — gold on dark */
+    .btn-primary { background: linear-gradient(135deg, #0F1923 0%, #1B4F72 100%); color: #F7F5F0; transition: all 0.3s ease; }
+    .btn-primary:hover { box-shadow: 0 8px 24px -8px rgba(27,79,114,0.45); transform: translateY(-1px); }
+    .btn-primary .arr { background: #C5933A; transition: background 0.3s ease; }
+    .btn-primary:hover .arr { background: #9E7520; }
+
+    /* Dashed upload box */
+    .dashed-box { background:
+      linear-gradient(90deg,#B5AFA3 50%, transparent 50%) top/12px 1px repeat-x,
+      linear-gradient(90deg,#B5AFA3 50%, transparent 50%) bottom/12px 1px repeat-x,
+      linear-gradient(0deg,#B5AFA3 50%, transparent 50%) left/1px 12px repeat-y,
+      linear-gradient(0deg,#B5AFA3 50%, transparent 50%) right/1px 12px repeat-y;
+    }
+
+    /* Pills */
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; font-size:11px; letter-spacing:.04em; text-transform:uppercase; font-weight:500; background:#EDEAE3; color:#2A3441; border:1px solid #D6D1C7; }
+    .pill-ink { background:#0F1923; color:#F7F5F0; border-color:#0F1923; }
+    .pill-accent { background:linear-gradient(135deg, #C5933A, #9E7520); color:#F7F5F0; border-color:#C5933A; }
+    .pill-blue { background:#1B4F72; color:#F7F5F0; border-color:#1B4F72; }
+
+    /* Underline links */
+    .ul-link { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; text-decoration-color: #B5AFA3; }
+    .ul-link:hover { text-decoration-color: #0F1923; }
+
+    /* Card lift */
+    .lift { transition: transform .3s ease, box-shadow .3s ease; }
+    .lift:hover { transform: translateY(-3px); box-shadow: 0 4px 0 rgba(197,147,58,0.12), 0 16px 32px -16px rgba(15,25,35,0.2); }
+
+    /* Screen container */
+    .screen { display:none; }
+    .screen[data-active="true"] { display:block; }
+    html { scroll-behavior: smooth; }
+
+    /* Glowing accent line */
+    .glow-line { background: linear-gradient(90deg, transparent, #C5933A, #1B4F72, transparent); height: 2px; opacity: 0.6; }
+
+    /* Shimmer effect for hero */
+    @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+    .shimmer-text {
+      background: linear-gradient(90deg, #0F1923 40%, #C5933A 50%, #0F1923 60%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 4s ease-in-out infinite;
+    }
+
+    /* Gradient card */
+    .card-gradient {
+      background: linear-gradient(135deg, #0F1923 0%, #1B4F72 60%, #1B3A50 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .card-gradient::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(197,147,58,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Animated border gradient */
+    @keyframes borderRotate { 0% { --angle: 0deg; } 100% { --angle: 360deg; } }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body class="paper-tex">
+  <div id="app"></div>
+
+  <script type="text/babel" src="/src_hack/data.jsx"></script>
+  <script type="text/babel" src="/src_hack/atoms.jsx"></script>
+  <script type="text/babel" src="/src_hack/charts.jsx"></script>
+  <script type="text/babel" src="/src_hack/screen-landing.jsx"></script>
+  <script type="text/babel" src="/src_hack/screen-dashboard.jsx"></script>
+  <script type="text/babel" src="/src_hack/screen-institution.jsx"></script>
+  <script type="text/babel" src="/src_hack/screen-teacher.jsx"></script>
+  <script type="text/babel" src="/src_hack/screen-student.jsx"></script>
+  <script type="text/babel" src="/src_hack/screen-handoff.jsx"></script>
+  <script type="text/babel" src="/src_hack/app.jsx"></script>
+</body>
 </html>
