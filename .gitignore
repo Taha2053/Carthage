@@ -30,6 +30,7 @@ ENV/
 env.bak/
 venv.bak/
 Problem Statement.pdf
+*.sql
 
 # Virtual environments
 .pyenv/
@@ -93,3 +94,6 @@ dmypy.json
 
 # FastAPI
 .fastapi/
+
+# Downloaded reference site
+ucar_rnu_tn/

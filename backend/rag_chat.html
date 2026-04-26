@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>UCAR AI Assistant</title>
+  <!-- Markdown parser for human-readable AI responses -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 2rem auto; color: #333; }
+    #chat_box p { margin: 0.5rem 0; line-height: 1.5; }
+    #chat_box ul, #chat_box ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+    .ai-msg { background: #f0f7ff; padding: 1rem; border-radius: 8px; margin: 1rem 0; border: 1px solid #cce3ff; }
+    .user-msg { background: #f3f4f6; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <h1>UCAR AI Assistant</h1>
+
+  <!-- ── Upload Section ─────────────────────────────────── -->
+  <h2>Upload Document to Knowledge Base</h2>
+
+  <label>Institution ID: <input type="number" id="institution_id" value="1"></label><br><br>
+  <label>Document Type:
+    <select id="doc_type">
+      <option value="report">Report</option>
+      <option value="policy">Policy</option>
+      <option value="regulation">Regulation</option>
+      <option value="thesis">Thesis</option>
+    </select>
+  </label><br><br>
+  <input type="file" id="file_input" accept=".pdf,.txt,.md"><br><br>
+  <button onclick="uploadFile()">Upload</button>
+  <p id="upload_status"></p>
+
+  <hr>
+
+  <!-- ── Document List ──────────────────────────────────── -->
+  <h2>Uploaded Documents</h2>
+  <button onclick="loadDocuments()">Refresh List</button>
+  <ul id="doc_list"></ul>
+
+  <hr>
+
+  <!-- ── Chat Section ───────────────────────────────────── -->
+  <h2>Ask a Question</h2>
+
+  <label>Institution ID (optional): <input type="number" id="chat_institution_id"></label><br><br>
+  <textarea id="chat_input" rows="3" cols="60" placeholder="e.g. What is the dropout rate in 2024?"></textarea><br><br>
+  <button onclick="sendQuery()">Ask</button>
+  <p id="chat_status"></p>
+
+  <div id="chat_box" style="border:1px solid #ccc; padding:10px; max-height:400px; overflow-y:auto; width:600px;"></div>
+
+  <script>
+    const API = "http://127.0.0.1:8000/api/v1";
+
+    // ── Upload ────────────────────────────────────────────
+    async function uploadFile() {
+      const file = document.getElementById("file_input").files[0];
+      if (!file) { alert("Select a file first"); return; }
+
+      const institutionId = document.getElementById("institution_id").value;
+      const docType = document.getElementById("doc_type").value;
+
+      const status = document.getElementById("upload_status");
+      status.textContent = "Uploading and embedding...";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch(
+          `${API}/documents/upload?institution_id=${institutionId}&doc_type=${docType}`,
+          { method: "POST", body: formData }
+        );
+        const data = await res.json();
+        if (res.ok) {
+          status.textContent = `Done! ${data.chunks_inserted} chunks embedded from "${data.filename}"`;
+          loadDocuments();
+        } else {
+          status.textContent = `Error: ${data.detail}`;
+        }
+      } catch (e) {
+        status.textContent = `Network error: ${e}`;
+      }
+    }
+
+    // ── Document List ─────────────────────────────────────
+    async function loadDocuments() {
+      const institutionId = document.getElementById("institution_id").value;
+      const res = await fetch(`${API}/documents?institution_id=${institutionId}&limit=50`);
+      const docs = await res.json();
+      const list = document.getElementById("doc_list");
+      list.innerHTML = "";
+      if (!docs.length) { list.innerHTML = "<li>No documents yet.</li>"; return; }
+      docs.forEach(d => {
+        const li = document.createElement("li");
+        li.textContent = `[${d.doc_type}] ${d.title} — ${d.created_at?.slice(0, 10)}`;
+        list.appendChild(li);
+      });
+    }
+
+    // ── Chat ──────────────────────────────────────────────
+    async function sendQuery() {
+      const query = document.getElementById("chat_input").value.trim();
+      if (!query) return;
+
+      const institutionId = document.getElementById("chat_institution_id").value || null;
+      const chatBox = document.getElementById("chat_box");
+      const status = document.getElementById("chat_status");
+
+      // Show user message
+      chatBox.innerHTML += `<div class="user-msg"><b>You:</b> ${query}</div>`;
+      document.getElementById("chat_input").value = "";
+      status.textContent = "Thinking...";
+
+      try {
+        const res = await fetch(`${API}/query`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, institution_id: institutionId ? parseInt(institutionId) : null })
+        });
+        const data = await res.json();
+
+        // Convert the AI's markdown response to beautiful HTML
+        const htmlAnswer = marked.parse(data.answer);
+        chatBox.innerHTML += `<div class="ai-msg"><b>AI:</b> ${htmlAnswer}</div>`;
+        
+        if (data.generated_sql) {
+          chatBox.innerHTML += `<details><summary style="cursor:pointer;color:#666;font-size:0.9em">View SQL</summary><pre style="background:#eee;padding:10px;border-radius:4px;overflow-x:auto;">${data.generated_sql}</pre></details>`;
+        }
+        status.textContent = `Done in ${data.execution_ms}ms | Mode: ${data.generated_sql ? 'SQL' : 'RAG'}`;
+      } catch (e) {
+        chatBox.innerHTML += `<p><b>Error:</b> ${e}</p>`;
+        status.textContent = "";
+      }
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Allow Enter key to send
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("chat_input").addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendQuery(); }
+      });
+      loadDocuments();
+    });
+  </script>
+</body>
+</html>

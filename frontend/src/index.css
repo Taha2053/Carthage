@@ -1,0 +1,197 @@
+@import "@fontsource/geist-sans/400.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 20% 96%;
+    --foreground: 210 40% 8%;
+    --card: 40 15% 93%;
+    --card-foreground: 210 40% 8%;
+    --popover: 40 15% 93%;
+    --popover-foreground: 210 40% 8%;
+    --primary: 37 55% 48%;
+    --primary-foreground: 40 20% 96%;
+    --secondary: 40 10% 87%;
+    --secondary-foreground: 210 30% 15%;
+    --muted: 40 10% 87%;
+    --muted-foreground: 210 15% 45%;
+    --accent: 37 55% 48%;
+    --accent-foreground: 40 20% 96%;
+    --destructive: 0 72% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 18% 82%;
+    --input: 36 18% 82%;
+    --ring: 37 55% 48%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    background-color: #F4EBD5;
+    color: #0F1923;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer utilities {
+  /* Typography helpers */
+  .font-display {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-optical-sizing: auto;
+  }
+  .num {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-feature-settings: 'tnum' 1;
+  }
+  .ar {
+    font-family: 'Noto Naskh Arabic', serif;
+  }
+
+  /* Decorative lines */
+  .hairline {
+    background-image: linear-gradient(to right, #D6D1C7 50%, transparent 50%);
+    background-size: 6px 1px;
+    background-repeat: repeat-x;
+    height: 1px;
+  }
+  .grain {
+    background-image: radial-gradient(rgba(15,25,35,0.03) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+  .paper-tex {
+    background-color: #F7F5F0;
+    background-image:
+      radial-gradient(rgba(27,79,114,0.018) 1px, transparent 1px),
+      radial-gradient(rgba(197,147,58,0.02) 1px, transparent 1px);
+    background-size: 5px 5px, 7px 7px;
+    background-position: 0 0, 2px 3px;
+  }
+
+  /* Scrollbar hide */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  /* Pulse EKG animation */
+  @keyframes ekg { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -100; } }
+  .ekg-anim { stroke-dasharray: 4 0; animation: ekg 18s linear infinite; }
+
+  /* Marquee */
+  @keyframes scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .marquee-anim { animation: scroll-x 40s linear infinite; }
+  .marquee-anim:hover { animation-play-state: paused; }
+
+  /* Nav active indicator */
+  .nav-link { position: relative; }
+  .nav-link[data-active="true"]::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    bottom: -10px;
+    height: 2px;
+    background: linear-gradient(90deg, #C5933A, #1B4F72);
+    border-radius: 2px;
+  }
+
+  /* Selection */
+  ::selection { background: #C5933A; color: #F7F5F0; }
+
+  /* Pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    font-weight: 500;
+    background: #EDEAE3;
+    color: #2A3441;
+    border: 1px solid #D6D1C7;
+  }
+  .pill-ink { background: #0F1923; color: #F7F5F0; border-color: #0F1923; }
+  .pill-accent { background: linear-gradient(135deg, #C5933A, #9E7520); color: #F7F5F0; border-color: #C5933A; }
+
+  /* Primary CTA button */
+  .btn-primary {
+    background: linear-gradient(135deg, #0F1923 0%, #1B4F72 100%);
+    color: #F7F5F0;
+    transition: all 0.3s ease;
+  }
+  .btn-primary:hover { box-shadow: 0 8px 24px -8px rgba(27,79,114,0.45); transform: translateY(-1px); }
+  .btn-primary .arr { background: #C5933A; transition: background 0.3s ease; }
+  .btn-primary:hover .arr { background: #9E7520; }
+
+  /* Underline links */
+  .ul-link { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; text-decoration-color: #B5AFA3; }
+  .ul-link:hover { text-decoration-color: #0F1923; }
+
+  /* Card lift */
+  .lift { transition: transform .3s ease, box-shadow .3s ease; }
+  .lift:hover { transform: translateY(-3px); box-shadow: 0 4px 0 rgba(197,147,58,0.12), 0 16px 32px -16px rgba(15,25,35,0.2); }
+
+  /* Gold shimmer sweep — for headings */
+  @keyframes gold-sweep {
+    0%   { background-position: -250% center; }
+    100% { background-position: 250% center; }
+  }
+  .gold-shimmer {
+    background: linear-gradient(
+      90deg,
+      #0F1923 20%,
+      #C5933A 38%,
+      #F7D98B 50%,
+      #C5933A 62%,
+      #0F1923 80%
+    );
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gold-sweep 15s ease-in-out infinite;
+  }
+
+  /* Carthage mosaic subtle background pattern */
+  .carthage-bg {
+    background-color: #F4EBD5;
+    background-image:
+      linear-gradient(30deg, rgba(197,147,58,0.03) 12%, transparent 12.5%, transparent 87%, rgba(197,147,58,0.03) 87.5%),
+      linear-gradient(150deg, rgba(197,147,58,0.03) 12%, transparent 12.5%, transparent 87%, rgba(197,147,58,0.03) 87.5%),
+      linear-gradient(30deg, rgba(27,79,114,0.03) 12%, transparent 12.5%, transparent 87%, rgba(27,79,114,0.03) 87.5%),
+      linear-gradient(150deg, rgba(27,79,114,0.03) 12%, transparent 12.5%, transparent 87%, rgba(27,79,114,0.03) 87.5%);
+    background-size: 40px 70px;
+    background-position: 0 0, 0 0, 20px 35px, 20px 35px;
+  }
+
+  /* Glow line divider */
+  .glow-line {
+    background: linear-gradient(90deg, transparent, #C5933A 30%, #F7D98B 50%, #C5933A 70%, transparent);
+    height: 1px;
+    opacity: 0.5;
+  }
+
+  /* Animate in from bottom */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fade-up 0.6s ease both; }
+  .fade-up-1 { animation: fade-up 0.6s 0.1s ease both; }
+  .fade-up-2 { animation: fade-up 0.6s 0.2s ease both; }
+  .fade-up-3 { animation: fade-up 0.6s 0.35s ease both; }
+
+  /* Health dot glow */
+  .dot-critical { background: #C0392B; box-shadow: 0 0 6px rgba(192,57,43,0.6); }
+  .dot-warning  { background: #D4AC0D; box-shadow: 0 0 6px rgba(212,172,13,0.5); }
+  .dot-good     { background: #1E8449; box-shadow: 0 0 6px rgba(30,132,73,0.5); }
+  .dot-nodata   { background: #6B7A8D; }
+}
