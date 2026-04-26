@@ -16,6 +16,7 @@ import OrchestratorPage from './pages/OrchestratorPage'
 import StrategicIntelligencePage from './pages/StrategicIntelligencePage'
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/layout/ProtectedRoute'
+import ChatWidget from './components/chat/ChatWidget'
 import { Toaster } from 'react-hot-toast'
 
 // New CRUD Pages
@@ -186,6 +187,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ChatWidget />
     </BrowserRouter>
   )
 }

@@ -9,6 +9,7 @@ import logging
 import re
 from typing import Any, Dict, Optional
 
+from supabase._async.client import AsyncClient
 
 from core.llm import call_llm
 
@@ -66,6 +67,8 @@ def _extract_sql(raw: str) -> str:
     raw = raw.strip()
     # Remove ```sql ... ``` or ``` ... ```
     raw = re.sub(r"```(?:sql)?", "", raw, flags=re.IGNORECASE).strip("`").strip()
+    # Remove any trailing semicolon and whitespace, since run_sql expects a single statement
+    raw = raw.rstrip().rstrip(";")
     return raw
 
 
