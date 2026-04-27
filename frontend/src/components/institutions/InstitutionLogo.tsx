@@ -199,7 +199,37 @@ const DEFAULT_LOGO = (id: string, initials: string) => (
   </svg>
 )
 
+const IMAGE_LOGOS: Record<string, string> = {
+  'enau': "Ecole Nationale d'Architecture et d'Urbanisme de Tunis.jpeg",
+  'ept': "Ecole Polytechnique de Tunisie.jpeg",
+  'estic': "Ecole Supérieure de Technologie et d'Informatique à Carthage.png",
+  'esac': "Ecole Supérieure de l'Audiovisuel et du Cinéma de Gammarth.jpeg",
+  'essai': "Ecole Supérieure des Statistiques et d'Analyse de l'Information.png",
+  'fsegn': "Faculté des Sciences Economiques et de Gestion de Nabeul.jpeg",
+  'fsjpst': "Faculté des Sciences Juridiques, Politiques et Sociales de Tunis.jpeg",
+  'inat': "Institut National Agronomique de Tunisie.jpeg",
+  'insat': "Institut National des Sciences Appliquées et de Technologie.jpeg",
+  'ipest': "Institut Préparatoire aux Etudes Scientifiques et Techniques.jpeg",
+  'ihec': "Institut des Hautes Etudes Commerciales de Carthage.jpg",
+  'supcom': "Sup'Com.png",
+  'enstab': "enstab.png",
+  'fsb': "faculte des sciences de bizerte.jpeg",
+}
+
 export function InstitutionLogo({ institutionId, size = 40, className = '' }: Props) {
+  const imageFilename = IMAGE_LOGOS[institutionId]
+
+  if (imageFilename) {
+    return (
+      <span
+        className={`inline-flex shrink-0 rounded-lg overflow-hidden shadow-sm bg-white border border-rule items-center justify-center ${className}`}
+        style={{ width: size, height: size }}
+      >
+        <img src={`/logos/${imageFilename}`} alt={institutionId} className="w-full h-full object-contain p-0.5 mix-blend-multiply" />
+      </span>
+    )
+  }
+
   const renderer = LOGOS[institutionId]
   const uid = `logo-${institutionId}`
   const element = renderer

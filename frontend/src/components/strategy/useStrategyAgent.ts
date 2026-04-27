@@ -201,7 +201,11 @@ export function useStrategyAgent() {
       categoryCache.current.set(category, { data: parsed, ts: Date.now() })
       setDashboard(prev => ({ ...prev, opportunities: parsed, lastUpdated: new Date().toLocaleTimeString('fr-FR') }))
     } catch (err) {
-      console.error('fetchOpportunities failed:', err)
+      if (err instanceof Error && err.message.includes('No Mistral API key')) {
+        console.warn('VITE_MISTRAL_API_KEY missing — utilizing Mock strategy data.')
+      } else {
+        console.error('fetchOpportunities failed:', err)
+      }
       setDashboard(prev => ({
         ...prev,
         opportunities: MOCK_OPPORTUNITIES.map(o => ({ ...o, id: Math.random().toString() })),
