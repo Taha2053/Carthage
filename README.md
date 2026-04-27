@@ -20,7 +20,7 @@ This repository contains the full CarthVillage platform, the presentation PDF, e
 
 Watch the CarthVillage platform overview, demo, and strategy presentation:
 
-[<https://github.com/Taha2053/Carthage/blob/242b92fce2d084756cd2fd06214c3cdf67339079/Carthage-Platform.mp4>]
+[<https://github.com/Taha2053/Carthage/Carthage-Platform.mp4>]
 
 ## Presentation Assets
 
