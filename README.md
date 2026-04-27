@@ -20,9 +20,9 @@ This repository contains the full CarthVillage platform, the presentation PDF, e
 
 Watch the CarthVillage platform overview, demo, and strategy presentation:
 
-[![Play Video](documentation/images/page-01.png)](./Carthage-Platform.pptx.mp4)
+[![Play Video](documentation/images/page-01.png)](./Carthage-Platform.mp4)
 
-[Download or Play Carthage-Platform.pptx.mp4](./Carthage-Platform.pptx.mp4) - Full platform demo and presentation video.
+[Download or Play Carthage-Platform.mp4](./Carthage-Platform.mp4) - Full platform demo and presentation video.
 
 
 ## Presentation Assets
@@ -105,10 +105,10 @@ npm run dev
   - `vite.config.ts` - Vite configuration.
 
 - `documentation/images/` - exported presentation page images.
-- `Carthage-Platform.pptx.mp4` - platform video presentation.
+- `Carthage-Platform.mp4` - platform video presentation.
 
 ## Notes
 
 The current repository is named CarthVillage to reflect the vision of a unified campus ecosystem. The platform is designed to connect universities and academic communities through shared resources, intelligent insights, and eco-friendly operations.
 
-For more detail on the platform vision, review the presentation images in `documentation/images` and play `Carthage-Platform.pptx.mp4`.
+For more detail on the platform vision, review the presentation images in `documentation/images` and play `Carthage-Platform.mp4`.
