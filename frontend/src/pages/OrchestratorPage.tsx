@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { deepAnalysis, networkBrief } from '@/services/orchestrator'
 import { useTranslation } from 'react-i18next'
+import { Brain, Globe } from 'lucide-react'
 
 export default function OrchestratorPage() {
   const { t } = useTranslation()
@@ -175,7 +176,7 @@ export default function OrchestratorPage() {
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-rule bg-paper2/30 p-16 text-center">
-                <div className="text-5xl mb-4">🧠</div>
+                <div className="flex justify-center mb-4 text-gold"><Brain size={48} strokeWidth={1.5} /></div>
                 <p className="font-display text-xl text-ink mb-2">{t('orchestrator.readyToAnalyze')}</p>
                 <p className="text-sm text-ink3">{t('orchestrator.configureAndLaunch')}</p>
               </div>
@@ -220,7 +221,7 @@ export default function OrchestratorPage() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-rule bg-paper2/30 p-10 text-center">
-              <div className="text-5xl mb-4">🌐</div>
+              <div className="flex justify-center mb-4 text-sea"><Globe size={48} strokeWidth={1.5} /></div>
               <p className="font-display text-xl text-ink mb-2">{t('orchestrator.networkBriefTitle')}</p>
               <p className="text-sm text-ink3">
                 {t('orchestrator.networkBriefDesc')}

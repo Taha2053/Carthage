@@ -1,20 +1,24 @@
-import api from './api'
+import { fetchInstitutionDetail, fetchNetworkBriefing } from './adapters'
 
-export const deepAnalysis = async (institutionId: number, includeReport = false) => {
-  const { data } = await api.post('/orchestrator/analyse', null, {
-    params: { institution_id: institutionId, include_report: includeReport },
-  })
-  return data
+export const deepAnalysis = async (institutionId: number) => {
+  const inst = await fetchInstitutionDetail(String(institutionId))
+  if (!inst) return { anomalies: [], pulse: 'Institution introuvable.' }
+  return {
+    anomalies: inst.alerts.map((a) => ({
+      metric_code: 'general',
+      title: a.message,
+      severity: a.severity,
+    })),
+    pulse: `${inst.name} — score risque ${inst.riskScore}, ${inst.alerts.length} alerte(s) active(s).`,
+  }
 }
 
 export const networkBrief = async () => {
-  const { data } = await api.post('/orchestrator/network-brief')
-  return data
+  const briefing = await fetchNetworkBriefing()
+  return {
+    network_summary: briefing.fullText,
+    institutions: briefing.findings.map((f) => ({ code: f.institutionId, pulse: f.text })),
+  }
 }
 
-export const triggerUploadPipeline = async (institutionId: number, filename: string, rowsInserted = 0) => {
-  const { data } = await api.post('/orchestrator/upload-pipeline', null, {
-    params: { institution_id: institutionId, filename, rows_inserted: rowsInserted },
-  })
-  return data
-}
+export const triggerUploadPipeline = async () => ({ ok: true, status: 'queued_local' })

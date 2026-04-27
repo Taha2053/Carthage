@@ -6,6 +6,7 @@ import StatsSection from '@/components/landing/StatsSection'
 import InstitutionGrid from '@/components/landing/InstitutionGrid'
 import OpportunitiesFeed from '@/components/landing/OpportunitiesFeed'
 import FeedbackSection from '@/components/landing/FeedbackSection'
+import SocioCulturalCarousel from '@/components/landing/SocioCulturalCarousel'
 import { Trophy, Leaf, MapPin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -157,6 +158,7 @@ export default function Index() {
       <InstitutionGrid highlightedId={highlightedId} />
       <OpportunitiesFeed />
       <FeedbackSection />
+      <SocioCulturalCarousel />
 
       {/* ── Partner Universities Marquee ── */}
       <section className="border-t border-rule py-12 bg-paper overflow-hidden">

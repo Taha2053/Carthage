@@ -1,129 +1,102 @@
 /**
- * Data adapters: transform backend responses to frontend types
- * Connected to real Supabase database via FastAPI backend
+ * Data adapters: query Supabase DIRECTLY from the browser.
+ * No backend dependency — uses the anon key + RLS-readable tables.
  */
-import api from './api'
+import { supabase } from '@/lib/supabase'
 import type { Institution, Alert, Briefing, KpiSnapshot, Health, DashboardSummary } from '@/types'
 
 /* ────────────────────────────────────────────
- * Backend Types
+ * Row Types (matching Supabase schema)
  * ──────────────────────────────────────────── */
 
-interface BackendInstitution {
+interface InstitutionRow {
   id: number
   code: string
   name: string
   short_name?: string
   name_fr?: string
-  type?: string
   city?: string
   region?: string
+  institution_type?: string
+  governing_body?: string
+  current_enrollment?: number
   is_active?: boolean
 }
 
-interface BackendKPI {
+interface KPIRow {
   id: number
   institution_id: number
   metric_id: number
   value: number
-  dim_metric?: { code: string; name: string }
-  dim_time?: { academic_year: string; semester: number }
+  dim_metric?: { code: string; name: string; domain_id?: number } | null
+  dim_time?: { academic_year?: string; semester?: number; month?: number } | null
 }
 
-interface BackendAlert {
+interface AlertRow {
   id: number
   institution_id: number
-  severity: string
-  message?: string
-  explanation?: string
-  recommended_action?: string
+  metric_id: number
+  severity: 'critical' | 'warning' | 'info'
+  message?: string | null
+  explanation?: string | null
+  recommended_action?: string | null
   resolved?: boolean
   created_at?: string
-  dim_metric?: { code: string }
-}
-
-interface BackendUser {
-  id: number
-  email: string
-  full_name?: string
-  role?: string
-  institution_id?: number
-}
-
-interface BackendDepartment {
-  id: number
-  code: string
-  name: string
-  institution_id: number
-}
-
-interface BackendProgram {
-  id: number
-  code: string
-  name: string
-  institution_id: number
-  department_id?: number
-}
-
-interface BackendStaff {
-  id: number
-  first_name: string
-  last_name: string
-  email?: string
-  role?: string
-  institution_id: number
-  department_id?: number
-}
-
-interface BackendStudent {
-  id: number
-  first_name: string
-  last_name: string
-  email?: string
-  institution_id: number
-  department_id?: number
-  enrollment_year?: number
+  dim_metric?: { code: string; name?: string } | null
 }
 
 /* ────────────────────────────────────────────
- * Helper Functions
+ * KPI snapshot builder
  * ──────────────────────────────────────────── */
 
-function determineHealth(alerts: BackendAlert[]): Health {
+function get(kpis: KPIRow[], ...codes: string[]): number {
+  for (const code of codes) {
+    const row = kpis.find((k) => k.dim_metric?.code === code)
+    if (row && row.value != null) return Number(row.value)
+  }
+  return 0
+}
+
+function buildKpiSnapshot(kpis: KPIRow[]): KpiSnapshot {
+  return {
+    month: new Date().toISOString().slice(0, 7),
+    academique: {
+      tauxReussite: get(kpis, 'success_rate', 'taux_reussite'),
+      tauxPresence: get(kpis, 'attendance_rate', 'taux_presence'),
+      tauxAbandon: get(kpis, 'dropout_rate', 'taux_abandon'),
+      tauxRedoublement: get(kpis, 'repetition_rate', 'taux_redoublement'),
+      effectif: get(kpis, 'enrolled_students', 'effectif'),
+    },
+    insertion: {
+      tauxEmployabilite: get(kpis, 'employability_rate', 'employabilite'),
+      delaiInsertion: get(kpis, 'insertion_delay', 'delai_insertion'),
+      tauxConventionNationale: get(kpis, 'national_conv_rate'),
+      tauxConventionInternationale: get(kpis, 'international_conv_rate'),
+    },
+    finance: {
+      budgetAlloue: get(kpis, 'budget_allocated', 'budget_alloue'),
+      budgetConsomme: get(kpis, 'budget_consumed', 'budget_consomme'),
+      coutParEtudiant: get(kpis, 'cost_per_student', 'cout_etudiant'),
+      tauxExecution: get(kpis, 'budget_execution_rate', 'taux_execution'),
+    },
+    esg: {
+      consommationEnergetique: get(kpis, 'energy_consumption'),
+      empreinteCarbone: get(kpis, 'carbon_footprint'),
+      tauxRecyclage: get(kpis, 'recycling_rate'),
+    },
+  }
+}
+
+function determineHealth(alerts: AlertRow[]): Health {
   if (alerts.some((a) => a.severity === 'critical')) return 'critical'
   if (alerts.some((a) => a.severity === 'warning')) return 'warning'
   return 'good'
 }
 
-function buildKpiSnapshot(kpis: BackendKPI[]): KpiSnapshot {
-  const get = (code: string) => kpis.find((k) => k.dim_metric?.code === code)?.value ?? 0
-  return {
-    month: new Date().toISOString().slice(0, 7),
-    academique: {
-      tauxReussite: get('success_rate') || get('taux_reussite') || get('enrolled_students') ? 0 : 0,
-      tauxPresence: get('attendance_rate') || get('taux_presence') || 0,
-      tauxAbandon: get('dropout_rate') || get('taux_abandon') || 0,
-      tauxRedoublement: get('repetition_rate') || get('taux_redoublement') || 0,
-    },
-    insertion: {
-      tauxEmployabilite: get('employability_rate') || get('employabilite') || 0,
-      delaiInsertion: 0,
-      tauxConventionNationale: get('national_conv_rate') || 0,
-      tauxConventionInternationale: get('international_conv_rate') || 0,
-    },
-    finance: {
-      budgetAlloue: get('budget_allocated') || get('budget_alloue') || 0,
-      budgetConsomme: get('budget_consumed') || get('budget_consomme') || 0,
-      coutParEtudiant: get('cost_per_student') || get('cout_etudiant') || 0,
-      tauxExecution: get('budget_execution_rate') || get('taux_execution') || 0,
-    },
-  }
-}
-
-function buildAlerts(raw: BackendAlert[], institutionId: string): Alert[] {
-  return raw.map((a) => ({
+function mapAlerts(rows: AlertRow[], institutionId: string): Alert[] {
+  return rows.map((a) => ({
     id: String(a.id),
-    severity: (a.severity === 'critical' ? 'critical' : a.severity === 'warning' ? 'warning' : 'info') as Alert['severity'],
+    severity: a.severity,
     message: a.message ?? a.explanation ?? `Anomalie ${a.dim_metric?.code ?? 'KPI'}`,
     domain: 'academique' as const,
     institutionId,
@@ -134,365 +107,315 @@ function buildAlerts(raw: BackendAlert[], institutionId: string): Alert[] {
  * Institution APIs
  * ──────────────────────────────────────────── */
 
-export async function fetchAllInstitutions(): Promise<BackendInstitution[]> {
-  try {
-    const { data } = await api.get<BackendInstitution[]>('/institutions')
-    return data
-  } catch (err) {
-    console.error('Failed to fetch institutions:', err)
+export async function fetchAllInstitutions(): Promise<InstitutionRow[]> {
+  const { data, error } = await supabase
+    .from('dim_institution')
+    .select('*')
+    .eq('is_active', true)
+    .order('name')
+  if (error) {
+    console.error('[supabase] fetchAllInstitutions:', error.message)
     return []
   }
+  return data ?? []
 }
 
-export async function fetchInstitutionById(id: number): Promise<BackendInstitution | null> {
-  try {
-    const { data } = await api.get<BackendInstitution>(`/institutions/${id}`)
-    return data
-  } catch (err) {
-    console.error('Failed to fetch institution:', err)
+export async function fetchInstitutionById(id: number): Promise<InstitutionRow | null> {
+  const { data, error } = await supabase
+    .from('dim_institution')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) {
+    console.error('[supabase] fetchInstitutionById:', error.message)
     return null
   }
+  return data
 }
 
-export async function fetchInstitutionKPIs(institutionId: number): Promise<BackendKPI[]> {
-  try {
-    const { data } = await api.get<BackendKPI[]>('/kpis', { 
-      params: { institution_id: institutionId } 
-    })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch KPIs:', err)
+export async function fetchInstitutionKPIs(institutionId: number): Promise<KPIRow[]> {
+  const { data, error } = await supabase
+    .from('fact_kpis')
+    .select('id, institution_id, metric_id, value, dim_metric(code, name, domain_id)')
+    .eq('institution_id', institutionId)
+  if (error) {
+    console.error('[supabase] fetchInstitutionKPIs:', error.message)
     return []
   }
+  return (data as any) ?? []
 }
 
-export async function fetchInstitutionAlerts(institutionId: number): Promise<BackendAlert[]> {
-  try {
-    const { data } = await api.get<BackendAlert[]>('/alerts', { 
-      params: { institution_id: institutionId } 
-    })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch alerts:', err)
+export async function fetchInstitutionAlerts(institutionId: number): Promise<AlertRow[]> {
+  const { data, error } = await supabase
+    .from('alerts')
+    .select('id, institution_id, metric_id, severity, message, explanation, recommended_action, resolved, created_at, dim_metric(code, name)')
+    .eq('institution_id', institutionId)
+    .eq('resolved', false)
+  if (error) {
+    console.error('[supabase] fetchInstitutionAlerts:', error.message)
     return []
   }
+  return (data as any) ?? []
 }
 
 /* ────────────────────────────────────────────
  * Dashboard APIs
  * ──────────────────────────────────────────── */
 
-export async function fetchDashboardSummary(): Promise<DashboardSummary> {
-  const [data, alertsSummary, briefing] = await Promise.all([
-    fetchDashboardInstitutions(),
-    fetchNetworkAlerts(),
-    fetchNetworkBriefing()
-  ]);
-  
-  const networkIndex = 85.4; // Mocked or calculated overall index
-
-  return {
-    networkIndex,
-    institutions: data.institutions,
-    alertsSummary,
-    briefing,
-    rankings: []
-  };
-}
-
-
 export async function fetchDashboardInstitutions(): Promise<{ institutions: Institution[]; placeholders: string[] }> {
-  try {
-    const [instRes, alertsRes, kpisRes] = await Promise.all([
-      api.get<BackendInstitution[]>('/institutions'),
-      api.get<BackendAlert[]>('/alerts'),
-      api.get<BackendKPI[]>('/kpis'),
-    ])
+  const [instRows, alertRows, kpiRows] = await Promise.all([
+    fetchAllInstitutions(),
+    (async (): Promise<AlertRow[]> => {
+      const { data, error } = await supabase
+        .from('alerts')
+        .select('id, institution_id, metric_id, severity, message, explanation, dim_metric(code, name)')
+        .eq('resolved', false)
+      if (error) console.error('[supabase] alerts:', error.message)
+      return (data as any) ?? []
+    })(),
+    (async (): Promise<KPIRow[]> => {
+      const { data, error } = await supabase
+        .from('fact_kpis')
+        .select('id, institution_id, metric_id, value, dim_metric(code, name, domain_id)')
+      if (error) console.error('[supabase] kpis:', error.message)
+      return (data as any) ?? []
+    })(),
+  ])
 
-    const institutions: Institution[] = instRes.data.map((inst, idx) => {
-      const instAlerts = alertsRes.data.filter((a) => a.institution_id === inst.id)
-      const instKpis = kpisRes.data.filter((k) => k.institution_id === inst.id)
-      const current = buildKpiSnapshot(instKpis)
-      const alerts = buildAlerts(instAlerts, String(inst.id))
-
-      return {
-        id: String(inst.id),
-        name: inst.code || inst.short_name || inst.name,
-        fullName: inst.name,
-        health: determineHealth(instAlerts),
-        current,
-        history: [current],
-        alerts,
-        riskScore: instAlerts.filter((a) => a.severity === 'critical').length * 30 + (100 - (current.academique?.tauxReussite ?? 80)),
-        ranking: idx + 1,
-      }
-    })
-
-    return { institutions, placeholders: instRes.data.map((i) => String(i.id)) }
-  } catch (err) {
-    console.error('Failed to fetch dashboard data:', err)
-    return { institutions: [], placeholders: [] }
-  }
-}
-
-export async function fetchInstitutionDetail(id: string): Promise<Institution | null> {
-  try {
-    const numId = parseInt(id)
-    if (isNaN(numId)) return null
-
-    const [instRes, kpisRes, alertsRes] = await Promise.all([
-      api.get<BackendInstitution>(`/institutions/${numId}`),
-      api.get<BackendKPI[]>('/kpis', { params: { institution_id: numId } }),
-      api.get<BackendAlert[]>('/alerts', { params: { institution_id: numId } }),
-    ])
-
-    const inst = instRes.data
-    const current = buildKpiSnapshot(kpisRes.data)
-    const alerts = buildAlerts(alertsRes.data, id)
+  const institutions: Institution[] = instRows.map((inst, idx) => {
+    const instAlerts = alertRows.filter((a) => a.institution_id === inst.id)
+    const instKpis = kpiRows.filter((k) => k.institution_id === inst.id)
+    const current = buildKpiSnapshot(instKpis)
+    const alerts = mapAlerts(instAlerts, String(inst.id))
 
     return {
       id: String(inst.id),
-      name: inst.code || inst.short_name || inst.name,
+      name: inst.short_name || inst.code || inst.name,
       fullName: inst.name,
-      health: determineHealth(alertsRes.data),
-      history: [current],
+      health: determineHealth(instAlerts),
       current,
+      history: [current],
       alerts,
-      riskScore: alertsRes.data.filter((a) => a.severity === 'critical').length * 30 + (100 - (current.academique?.tauxReussite ?? 80)),
-      ranking: 1,
+      riskScore:
+        instAlerts.filter((a) => a.severity === 'critical').length * 30 +
+        (100 - (current.academique?.tauxReussite ?? 80)),
+      ranking: idx + 1,
+      code: inst.code,
+      short_name: inst.short_name,
+      city: inst.city,
+      institution_type: inst.institution_type,
+      current_enrollment: inst.current_enrollment,
+      governing_body: inst.governing_body,
     }
-  } catch (err) {
-    console.error('Failed to fetch institution detail:', err)
-    return null
+  })
+
+  return { institutions, placeholders: instRows.map((i) => String(i.id)) }
+}
+
+export async function fetchDashboardSummary(): Promise<DashboardSummary> {
+  const [{ institutions }, alertsSummary, briefing] = await Promise.all([
+    fetchDashboardInstitutions(),
+    fetchNetworkAlerts(),
+    fetchNetworkBriefing(),
+  ])
+  const networkIndex =
+    institutions.length === 0
+      ? 0
+      : Math.round(
+          (institutions.reduce(
+            (s, i) => s + (i.current.academique?.tauxReussite ?? 0),
+            0,
+          ) /
+            institutions.length) *
+            10,
+        ) / 10
+  return { networkIndex, institutions, alertsSummary, briefing, rankings: [] }
+}
+
+export async function fetchInstitutionDetail(id: string): Promise<Institution | null> {
+  const numId = parseInt(id)
+  if (isNaN(numId)) return null
+
+  const [inst, kpis, alertRows] = await Promise.all([
+    fetchInstitutionById(numId),
+    fetchInstitutionKPIs(numId),
+    fetchInstitutionAlerts(numId),
+  ])
+  if (!inst) return null
+
+  const current = buildKpiSnapshot(kpis)
+  const alerts = mapAlerts(alertRows, id)
+
+  return {
+    id: String(inst.id),
+    name: inst.short_name || inst.code || inst.name,
+    fullName: inst.name,
+    health: determineHealth(alertRows),
+    current,
+    history: [current],
+    alerts,
+    riskScore:
+      alertRows.filter((a) => a.severity === 'critical').length * 30 +
+      (100 - (current.academique?.tauxReussite ?? 80)),
+    ranking: 1,
+    code: inst.code,
+    short_name: inst.short_name,
+    city: inst.city,
+    institution_type: inst.institution_type,
+    current_enrollment: inst.current_enrollment,
+    governing_body: inst.governing_body,
   }
 }
 
 /* ────────────────────────────────────────────
- * Network Briefing
+ * Network Briefing (no LLM call — synthesized from data)
  * ──────────────────────────────────────────── */
 
 export async function fetchNetworkBriefing(): Promise<Briefing> {
-  try {
-    const { data } = await api.post('/orchestrator/network-brief')
-    return {
-      generatedAt: new Date().toISOString(),
-      weekLabel: `Semaine ${Math.ceil(new Date().getDate() / 7)}`,
-      findings: (data.institutions ?? []).map((inst: any) => ({
-        severity: 'info' as const,
-        text: inst.pulse?.substring(0, 200) ?? '',
-        institutionId: inst.code,
-        domain: 'general',
-      })),
-      fullText: data.network_summary ?? '',
-    }
-  } catch (err) {
-    console.error('Failed to fetch network briefing:', err)
-    return {
-      generatedAt: new Date().toISOString(),
-      weekLabel: 'Semaine 1',
-      findings: [],
-      fullText: '',
-    }
+  const { data: alertRows } = await supabase
+    .from('alerts')
+    .select('id, institution_id, severity, message, explanation, dim_institution(code, short_name, name)')
+    .eq('resolved', false)
+    .order('severity')
+    .limit(20)
+
+  const findings = (alertRows ?? []).map((a: any) => ({
+    severity: (a.severity ?? 'info') as Alert['severity'],
+    text: a.message ?? a.explanation ?? 'Alerte détectée',
+    institutionId: a.dim_institution?.code ?? String(a.institution_id),
+    domain: 'academique',
+  }))
+
+  const week = Math.ceil(new Date().getDate() / 7)
+  return {
+    generatedAt: new Date().toISOString(),
+    weekLabel: `Semaine ${week}`,
+    findings,
+    fullText: findings.length
+      ? `${findings.length} alertes actives nécessitent attention.`
+      : 'Aucune alerte critique cette semaine.',
   }
 }
 
 export async function fetchNetworkAlerts(): Promise<Alert[]> {
-  try {
-    const { data } = await api.get<BackendAlert[]>('/alerts')
-    return buildAlerts(data, 'network').sort((a, b) => {
-      const o = { critical: 0, warning: 1, info: 2 }
-      return o[a.severity] - o[b.severity]
-    })
-  } catch (err) {
-    console.error('Failed to fetch network alerts:', err)
+  const { data, error } = await supabase
+    .from('alerts')
+    .select('id, institution_id, metric_id, severity, message, explanation, dim_metric(code, name)')
+    .eq('resolved', false)
+  if (error) {
+    console.error('[supabase] fetchNetworkAlerts:', error.message)
     return []
   }
+  const order = { critical: 0, warning: 1, info: 2 } as const
+  return mapAlerts((data as any) ?? [], 'network').sort(
+    (a, b) => order[a.severity] - order[b.severity],
+  )
 }
 
 /* ────────────────────────────────────────────
- * User & Staff APIs
+ * Staff / Students / Departments / Programs
  * ──────────────────────────────────────────── */
 
-export async function fetchStaff(institutionId: number): Promise<BackendStaff[]> {
-  try {
-    const { data } = await api.get<BackendStaff[]>('/staff', { 
-      params: { institution_id: institutionId } 
-    })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch staff:', err)
-    return []
-  }
+export async function fetchStaff(institutionId: number) {
+  const { data, error } = await supabase
+    .from('dim_staff')
+    .select('*')
+    .eq('institution_id', institutionId)
+  if (error) console.error('[supabase] fetchStaff:', error.message)
+  return data ?? []
 }
 
-export async function fetchStudents(institutionId: number): Promise<BackendStudent[]> {
-  try {
-    const { data } = await api.get<BackendStudent[]>('/students', { 
-      params: { institution_id: institutionId } 
-    })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch students:', err)
-    return []
-  }
+export async function fetchStudents(institutionId: number) {
+  const { data, error } = await supabase
+    .from('dim_student')
+    .select('*')
+    .eq('institution_id', institutionId)
+  if (error) console.error('[supabase] fetchStudents:', error.message)
+  return data ?? []
+}
+
+export async function fetchDepartments(institutionId?: number) {
+  let q = supabase.from('dim_department').select('*').order('name')
+  if (institutionId) q = q.eq('institution_id', institutionId)
+  const { data, error } = await q
+  if (error) console.error('[supabase] fetchDepartments:', error.message)
+  return data ?? []
+}
+
+export async function fetchPrograms(institutionId: number) {
+  const { data, error } = await supabase
+    .from('dim_program')
+    .select('*')
+    .eq('institution_id', institutionId)
+  if (error) console.error('[supabase] fetchPrograms:', error.message)
+  return data ?? []
 }
 
 export async function fetchStudentProfile(): Promise<import('@/types').StudentProfile | null> {
-  try {
-    const { data } = await api.get('/students/me')
-    return {
-      name: `${data.first_name} ${data.last_name}`,
-      matricule: String(data.id),
-      filiere: data.department?.name ?? 'Informatique',
-      annee: data.enrollment_year ?? 3,
-      tauxPresence: 92,
-      moyenne: 14.5,
-      credits: 45,
-      creditsTotal: 180,
-      progression: 'on_track' as const,
-      nudge: 'Continuez vos efforts !',
-      courses: [],
-    }
-  } catch (err) {
-    console.error('Failed to fetch student profile:', err)
-    return null
+  const { data, error } = await supabase.from('dim_student').select('*').limit(1).maybeSingle()
+  if (error || !data) return null
+  return {
+    name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim(),
+    matricule: String(data.id),
+    filiere: 'Informatique',
+    annee: data.enrollment_year ?? 1,
+    tauxPresence: 92,
+    moyenne: 14.5,
+    credits: 45,
+    creditsTotal: 180,
+    progression: 'on_track',
+    nudge: 'Continuez vos efforts !',
+    courses: [],
   }
 }
 
 export async function fetchTeacherProfile(): Promise<import('@/types').TeacherProfile | null> {
-  try {
-    const { data } = await api.get('/staff/me')
-    return {
-      name: `${data.first_name} ${data.last_name}`,
-      courses: [],
-    }
-  } catch (err) {
-    console.error('Failed to fetch teacher profile:', err)
-    return null
-  }
-}
-
-export async function fetchDepartments(institutionId: number): Promise<BackendDepartment[]> {
-  try {
-    const { data } = await api.get<BackendDepartment[]>('/departments', { 
-      params: { institution_id: institutionId } 
-    })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch departments:', err)
-    return []
-  }
-}
-
-export async function fetchPrograms(institutionId: number): Promise<BackendProgram[]> {
-  try {
-    const { data } = await api.get<BackendProgram[]>('/programs', { 
-      params: { institution_id: institutionId } 
-    })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch programs:', err)
-    return []
+  const { data, error } = await supabase.from('dim_staff').select('*').limit(1).maybeSingle()
+  if (error || !data) return null
+  return {
+    name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim(),
+    courses: [],
   }
 }
 
 /* ────────────────────────────────────────────
- * Upload APIs
- * ──────────────────────────────────────────── */
-
-export async function uploadFile(file: File, institutionId: number, onProgress?: (p: number) => void): Promise<{ success: boolean; rowsInserted?: number; error?: string }> {
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('institution_id', String(institutionId))
-  formData.append('domain_code', 'STU')
-
-  try {
-    const { data } = await api.post('/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (e) => {
-        if (onProgress && e.total) {
-          onProgress(Math.round((e.loaded * 100) / e.total))
-        }
-      },
-    })
-    return { success: true, rowsInserted: data.rows_inserted ?? 0 }
-  } catch (err: any) {
-    console.error('Upload failed:', err)
-    return { success: false, error: err.response?.data?.detail ?? 'Upload failed' }
-  }
-}
-
-export async function fetchUploadHistory(institutionId?: number) {
-  try {
-    const params = institutionId ? { institution_id: institutionId } : {}
-    const { data } = await api.get('/upload/history', { params })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch upload history:', err)
-    return []
-  }
-}
-
-/* ────────────────────────────────────────────
- * Forecast APIs
+ * Reports / Forecasts / Upload — stubbed (backend not running)
  * ──────────────────────────────────────────── */
 
 export async function fetchForecasts(institutionId?: number, metricId?: number) {
-  try {
-    const params: Record<string, number> = {}
-    if (institutionId) params.institution_id = institutionId
-    if (metricId) params.metric_id = metricId
-    const { data } = await api.get('/forecasts', { params })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch forecasts:', err)
-    return []
-  }
+  let q = supabase.from('kpi_forecasts').select('*')
+  if (institutionId) q = q.eq('institution_id', institutionId)
+  if (metricId) q = q.eq('metric_id', metricId)
+  const { data, error } = await q
+  if (error) console.error('[supabase] fetchForecasts:', error.message)
+  return data ?? []
 }
-
-/* ────────────────────────────────────────────
- * Report APIs
- * ──────────────────────────────────────────── */
 
 export async function fetchReports(institutionId?: number, reportType?: string) {
-  try {
-    const params: Record<string, string | number> = {}
-    if (institutionId) params.institution_id = institutionId
-    if (reportType) params.report_type = reportType
-    const { data } = await api.get('/reports', { params })
-    return data
-  } catch (err) {
-    console.error('Failed to fetch reports:', err)
-    return []
-  }
+  let q = supabase.from('reports').select('*').order('created_at', { ascending: false })
+  if (institutionId) q = q.eq('institution_id', institutionId)
+  if (reportType) q = q.eq('report_type', reportType)
+  const { data, error } = await q
+  if (error) console.error('[supabase] fetchReports:', error.message)
+  return data ?? []
 }
 
-export async function generateAIReport(institutionId: number, period: string) {
-  try {
-    const { data } = await api.post('/reports/generate', {
-      institution_id: institutionId,
-      period,
-    })
-    return data
-  } catch (err) {
-    console.error('Failed to generate report:', err)
-    return null
-  }
+export async function generateAIReport(_institutionId: number, _period: string) {
+  return { id: Date.now(), status: 'pending', message: 'Génération en cours…' }
 }
 
-/* ────────────────────────────────────────────
- * Query API (RAG)
- * ──────────────────────────────────────────── */
+export async function uploadFile() {
+  return { success: false, error: 'Upload nécessite le backend (non démarré).' }
+}
 
-export async function askQuestion(question: string, institutionId?: number) {
-  try {
-    const { data } = await api.post('/query/ask', {
-      question,
-      institution_id: institutionId,
-    })
-    return data
-  } catch (err) {
-    console.error('Failed to ask question:', err)
-    return { answer: 'Désolé, une erreur est survenue.', sources: [] }
-  }
+export async function fetchUploadHistory(institutionId?: number) {
+  let q = supabase.from('upload_log').select('*').order('created_at', { ascending: false }).limit(50)
+  if (institutionId) q = q.eq('institution_id', institutionId)
+  const { data, error } = await q
+  if (error) console.error('[supabase] fetchUploadHistory:', error.message)
+  return data ?? []
+}
+
+export async function askQuestion(question: string) {
+  return { answer: `Question reçue : "${question}". Le module RAG nécessite le backend.`, sources: [] }
 }

@@ -42,7 +42,7 @@ export default function TeacherAbsences() {
       // Simulate generating an alert if too many absences
       const absentCount = items.filter(i => i.status === 'absent').length
       if (absentCount > 1) {
-        toast(t('teacher.absences.alertWarning', 'Alerte générée : Certains étudiants dépassent le seuil d\'absences.'), { icon: '⚠️' })
+        toast(t('teacher.absences.alertWarning', 'Alerte générée : Certains étudiants dépassent le seuil d\'absences.'), { icon: <AlertCircle className="w-4 h-4 text-warn" /> })
       }
     }, 600)
   }

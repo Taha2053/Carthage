@@ -132,7 +132,7 @@ export default function ChatWidget() {
               <button
                 type="submit"
                 disabled={loading || !query.trim()}
-                className="inline-flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#1B4F72] to-[#102B56] px-4 text-sm font-semibold text-white transition hover:from-[#102B56] hover:to-[#0E254F] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+                className="inline-flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#1B4F72] to-[#0F1923] px-4 text-sm font-semibold text-white transition hover:from-[#0F1923] hover:to-[#0F1923] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </button>

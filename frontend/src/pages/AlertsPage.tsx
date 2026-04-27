@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getAlerts, resolveAlert } from '@/services/alerts'
 import { useTranslation } from 'react-i18next'
+import { CheckCircle } from 'lucide-react'
 
 export default function AlertsPage() {
   const { t, i18n } = useTranslation()
@@ -140,7 +141,7 @@ export default function AlertsPage() {
           })
         ) : (
           <div className="rounded-xl border border-dashed border-rule bg-paper2/30 p-10 text-center">
-            <div className="text-5xl mb-4">✅</div>
+            <div className="flex justify-center mb-4 text-ok"><CheckCircle size={48} strokeWidth={1.5} /></div>
             <p className="font-display text-xl text-ink mb-2">{t('alerts.noActiveAlerts')}</p>
             <p className="text-sm text-ink3">{t('alerts.allNormal')}</p>
           </div>
