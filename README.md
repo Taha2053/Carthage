@@ -18,12 +18,11 @@ This repository contains the full CarthVillage platform, the presentation PDF, e
 
 ## Video Showcase
 
-Watch the platform overview and demo directly from the repository:
+Watch the CarthVillage platform overview, demo, and strategy presentation:
 
-<video controls width="720">
-  <source src="./Carthage-Platform.pptx.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[![Play Video](documentation/images/page-01.png)](./Carthage-Platform.pptx.mp4)
+
+[Download or Play Carthage-Platform.pptx.mp4](./Carthage-Platform.pptx.mp4) - Full platform demo and presentation video.
 
 
 ## Presentation Assets
